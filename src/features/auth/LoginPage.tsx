@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,21 +11,41 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { entrar, buscarUsuario } from "@/features/auth/api";
 import { useSession } from "@/features/auth/session.store";
-import { chaveDeTraducao, extrairErro } from "@/lib/errors";
+import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 
-const esquema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
-
-type Campos = z.infer<typeof esquema>;
+type Campos = { email: string; password: string };
 
 export default function LoginPage() {
   const { t } = useTranslation(["auth", "errors", "common"]);
   const [erro, setErro] = useState<string | null>(null);
+  const motivoEncerramento = useSession((estado) => estado.motivoEncerramento);
+
+  // As mensagens do zod sao string de INTERFACE, e por isso passam pelo
+  // i18next como qualquer outra. Deixadas no padrao, elas chegam ao usuario
+  // em pt-BR em ingles e em jargao de biblioteca ("Invalid email"), sem que
+  // nenhuma busca por literal no componente acuse.
+  const esquema = useMemo(
+    () =>
+      z.object({
+        email: z.string().email({ message: t("auth:validation.email") }),
+        password: z.string().min(1, { message: t("auth:validation.required") }),
+      }),
+    [t],
+  );
+
   const { register, handleSubmit, formState } = useForm<Campos>({
     resolver: zodResolver(esquema),
   });
+
+  // Unico canal pelo qual um encerramento de sessao decidido fora de
+  // qualquer componente — REFRESH_TOKEN_REUSED no interceptor — chega a
+  // tela. O motivo e consumido uma vez e limpo, senao reaparece no proximo
+  // login.
+  useEffect(() => {
+    if (motivoEncerramento === null) return;
+    setErro(t(codigoTraduzivel(motivoEncerramento), { ns: "errors" }));
+    useSession.getState().limparMotivoEncerramento();
+  }, [motivoEncerramento, t]);
 
   async function aoEnviar(campos: Campos) {
     setErro(null);
@@ -36,13 +56,17 @@ export default function LoginPage() {
       useSession.getState().autenticar(access_token, usuario);
     } catch (falha) {
       const { code } = extrairErro(falha);
-      // chaveDeTraducao faz console.warn para codigos desconhecidos — o
-      // efeito colateral importa, mesmo que a gente nao use a string devolvida
-      // como chave do t(), porque o nsSeparator do i18next e ':' e nao '.'.
-      chaveDeTraducao(code);
-      setErro(t(code, { ns: "errors" }));
+      // codigoTraduzivel, e nao o codigo cru: o i18next devolve a propria
+      // chave quando ela nao existe, entao um HTTP_502 do gateway chegaria
+      // cru na tela do usuario.
+      setErro(t(codigoTraduzivel(code), { ns: "errors" }));
     }
   }
+
+  const campos: Array<{ nome: keyof Campos; rotulo: string; tipo: string; auto: string }> = [
+    { nome: "email", rotulo: t("auth:login.email"), tipo: "email", auto: "email" },
+    { nome: "password", rotulo: t("auth:login.password"), tipo: "password", auto: "current-password" },
+  ];
 
   return (
     <Card className="mx-auto mt-16 w-full max-w-sm">
@@ -51,19 +75,23 @@ export default function LoginPage() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(aoEnviar)} className="flex flex-col gap-4" noValidate>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email">{t("auth:login.email")}</Label>
-            <Input id="email" type="email" autoComplete="email" {...register("email")} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="password">{t("auth:login.password")}</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              {...register("password")}
-            />
-          </div>
+          {campos.map((campo) => (
+            <div key={campo.nome} className="flex flex-col gap-2">
+              <Label htmlFor={campo.nome}>{campo.rotulo}</Label>
+              <Input
+                id={campo.nome}
+                type={campo.tipo}
+                autoComplete={campo.auto}
+                aria-describedby={`${campo.nome}-erro`}
+                {...register(campo.nome)}
+              />
+              {/* Sem isto o formulario fica MUDO: o zod recusa, o submit
+                  nunca acontece, e o botao parece quebrado. */}
+              <p id={`${campo.nome}-erro`} className="text-sm text-destructive">
+                {formState.errors[campo.nome]?.message}
+              </p>
+            </div>
+          ))}
 
           {erro !== null && (
             <Alert variant="destructive">

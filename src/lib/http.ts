@@ -1,5 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { lerToken, useSession } from "@/features/auth/session.store";
+import { comTrava } from "@/lib/locks";
 
 export const URL_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
 
@@ -27,19 +28,25 @@ http.interceptors.request.use((config) => {
  * fila, duas requisicoes que tomam 401 juntas disparam dois /auth/refresh; o
  * segundo apresenta um token ja rotacionado, e o usuario e deslogado de
  * tudo. Duas requisicoes em paralelo e o caso normal, nao a excecao.
+ *
+ * Ela cobre uma aba. A coordenacao ENTRE abas e da Web Locks API, em
+ * `lib/locks.ts` — as duas camadas sao necessarias, e nenhuma substitui a
+ * outra.
  */
 let renovacaoEmVoo: Promise<string> | null = null;
 
 async function pedirTokenNovo(): Promise<string> {
-  // Instancia CRUA de proposito: usar `http` aqui faria o proprio
-  // /auth/refresh passar pelo interceptor de resposta e tentar renovar a si
-  // mesmo, em recursao.
-  const resposta = await axios.post<{ access_token: string }>(
-    `${URL_BASE}/auth/refresh`,
-    null,
-    { withCredentials: true },
-  );
-  return resposta.data.access_token;
+  return comTrava(async () => {
+    // Instancia CRUA de proposito: usar `http` aqui faria o proprio
+    // /auth/refresh passar pelo interceptor de resposta e tentar renovar a si
+    // mesmo, em recursao.
+    const resposta = await axios.post<{ access_token: string }>(
+      `${URL_BASE}/auth/refresh`,
+      null,
+      { withCredentials: true },
+    );
+    return resposta.data.access_token;
+  });
 }
 
 function renovar(): Promise<string> {
@@ -63,7 +70,10 @@ http.interceptors.response.use(
     // Sessoes revogadas por seguranca: nao adianta renovar, e insistir
     // apresentaria de novo um token ja marcado como comprometido.
     if (codigo === "REFRESH_TOKEN_REUSED") {
-      useSession.getState().encerrar();
+      // O motivo viaja junto: o router vai montar a LoginPage do zero, e sem
+      // ele o usuario e deslogado em silencio — indistinguivel de um bug do
+      // app, num evento que pode ser roubo de token.
+      useSession.getState().encerrar(codigo);
       return Promise.reject(erro);
     }
 

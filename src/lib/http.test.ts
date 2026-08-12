@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { http } from "@/lib/http";
+import { NOME_DA_TRAVA } from "@/lib/locks";
 import { servidor, URL_TESTE } from "@/test/msw";
 import { useSession } from "@/features/auth/session.store";
 import { http as mswHttp, HttpResponse } from "msw";
@@ -17,7 +18,18 @@ function envelope(code: string) {
 }
 
 beforeEach(() => {
-  useSession.setState({ accessToken: "expirado", user: usuario, status: "authenticated" });
+  useSession.setState({
+    accessToken: "expirado",
+    user: usuario,
+    status: "authenticated",
+    motivoEncerramento: null,
+  });
+});
+
+// O jsdom nao implementa a Web Locks API: todos os testes acima rodam pelo
+// caminho SEM trava, que e o que prova que ele continua funcionando.
+afterEach(() => {
+  Reflect.deleteProperty(navigator, "locks");
 });
 
 describe("cliente http", () => {
@@ -270,5 +282,51 @@ describe("cliente http", () => {
   it("withCredentials esta ligado, senao o cookie httpOnly de refresh nao viaja", () => {
     // Achado 2 (3o ponto).
     expect(http.defaults.withCredentials).toBe(true);
+  });
+
+  it("REFRESH_TOKEN_REUSED deixa o motivo no store para a tela de login ler", async () => {
+    // A fila unica e por MODULO, e modulo e por aba: quando duas abas
+    // renovam ao mesmo tempo e o gateway revoga tudo, este motivo e a unica
+    // coisa que separa "desconectado sem explicacao" de uma mensagem.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () =>
+        HttpResponse.json(envelope("REFRESH_TOKEN_REUSED"), { status: 401 }),
+      ),
+    );
+
+    await expect(http.get("/accounts")).rejects.toBeDefined();
+
+    expect(useSession.getState().motivoEncerramento).toBe("REFRESH_TOKEN_REUSED");
+  });
+
+  it("o refresh do interceptor passa pela trava entre abas", async () => {
+    // A fila unica cobre uma aba. Sem a trava, duas abas — ou restaurar a
+    // sessao do navegador, ou duplicar a aba — disparam dois /auth/refresh
+    // com o mesmo cookie, e o gateway revoga TODAS as sessoes.
+    const pedidos: string[] = [];
+    Object.defineProperty(navigator, "locks", {
+      configurable: true,
+      value: {
+        request<T>(nome: string, cb: () => Promise<T>): Promise<T> {
+          pedidos.push(nome);
+          return cb();
+        },
+      },
+    });
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/auth/refresh`, () =>
+        HttpResponse.json({ access_token: "tok-novo", token_type: "bearer", expires_in: 900 }),
+      ),
+      mswHttp.get(`${URL_TESTE}/accounts`, ({ request }) => {
+        if (request.headers.get("authorization") === "Bearer tok-novo") {
+          return HttpResponse.json([{ ok: true }]);
+        }
+        return HttpResponse.json(envelope("TOKEN_EXPIRED"), { status: 401 });
+      }),
+    );
+
+    await http.get("/accounts");
+
+    expect(pedidos).toEqual([NOME_DA_TRAVA]);
   });
 });

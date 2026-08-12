@@ -10,7 +10,12 @@ const usuario = {
 };
 
 beforeEach(() => {
-  useSession.setState({ accessToken: null, user: null, status: "booting" });
+  useSession.setState({
+    accessToken: null,
+    user: null,
+    status: "booting",
+    motivoEncerramento: null,
+  });
 });
 
 describe("store de sessao", () => {
@@ -43,6 +48,29 @@ describe("store de sessao", () => {
     expect(estado.accessToken).toBeNull();
     expect(estado.user).toBeNull();
     expect(estado.status).toBe("anonymous");
+  });
+
+  it("encerrar carrega o motivo ate a tela de login", () => {
+    // O interceptor de resposta vive fora de qualquer componente e o router
+    // monta a LoginPage do zero, com o estado de erro dela nascendo null.
+    // Este campo e o unico canal entre os dois.
+    useSession.getState().autenticar("tok-123", usuario);
+    useSession.getState().encerrar("REFRESH_TOKEN_REUSED");
+    expect(useSession.getState().motivoEncerramento).toBe("REFRESH_TOKEN_REUSED");
+  });
+
+  it("encerrar sem motivo — o botao Sair — nao deixa mensagem nenhuma", () => {
+    useSession.getState().autenticar("tok-123", usuario);
+    useSession.getState().encerrar();
+    expect(useSession.getState().motivoEncerramento).toBeNull();
+  });
+
+  it("autenticar limpa um motivo pendente", () => {
+    // Senao a mensagem de sessao revogada reapareceria no login seguinte,
+    // depois de tudo ja ter dado certo.
+    useSession.getState().encerrar("REFRESH_TOKEN_REUSED");
+    useSession.getState().autenticar("tok-123", usuario);
+    expect(useSession.getState().motivoEncerramento).toBeNull();
   });
 
   it("lerToken enxerga o token de fora de componente", () => {
