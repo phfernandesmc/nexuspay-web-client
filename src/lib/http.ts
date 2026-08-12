@@ -77,14 +77,21 @@ http.interceptors.response.use(
 
     if (!renovavel) return Promise.reject(erro);
 
+    let token: string;
     try {
-      const token = await renovar();
-      useSession.getState().definirToken(token);
-      requisicao._repetida = true;
-      return await http.request(requisicao);
+      token = await renovar();
     } catch {
+      // So a propria renovacao falhando justifica encerrar a sessao: o
+      // refresh token usado estava mesmo invalido/expirado.
       useSession.getState().encerrar();
       return Promise.reject(erro);
     }
+
+    useSession.getState().definirToken(token);
+    requisicao._repetida = true;
+    // Fora do try: se a requisicao repetida falhar por qualquer outro motivo
+    // (500, 404, rede), o erro dela deve propagar como esta, sem tocar na
+    // sessao — o token acabou de ser renovado com sucesso.
+    return http.request(requisicao);
   },
 );
