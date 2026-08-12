@@ -1,3 +1,5 @@
+import Router from "@/app/router";
+
 export default function App() {
-  return <h1>NexusPay</h1>;
+  return <Router />;
 }
