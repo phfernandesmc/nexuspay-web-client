@@ -1,0 +1,28 @@
+{
+  "common": {
+    "brand": "NexusPay",
+    "language": "Language",
+    "logout": "Sign out",
+    "loading": "Loading",
+    "home": "Home"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in to your account",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "toRegister": "Create an account"
+    },
+    "register": {
+      "title": "Create your account",
+      "fullName": "Full name",
+      "email": "Email",
+      "document": "CPF",
+      "password": "Password",
+      "submit": "Create account",
+      "toLogin": "I already have an account"
+    }
+  },
+  "errors": {}
+}

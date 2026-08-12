@@ -1,0 +1,28 @@
+{
+  "common": {
+    "brand": "NexusPay",
+    "language": "Idioma",
+    "logout": "Sair",
+    "loading": "Carregando",
+    "home": "Início"
+  },
+  "auth": {
+    "login": {
+      "title": "Entrar na sua conta",
+      "email": "E-mail",
+      "password": "Senha",
+      "submit": "Entrar",
+      "toRegister": "Criar uma conta"
+    },
+    "register": {
+      "title": "Criar sua conta",
+      "fullName": "Nome completo",
+      "email": "E-mail",
+      "document": "CPF",
+      "password": "Senha",
+      "submit": "Criar conta",
+      "toLogin": "Já tenho conta"
+    }
+  },
+  "errors": {}
+}
