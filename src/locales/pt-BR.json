@@ -22,6 +22,12 @@
       "password": "Senha",
       "submit": "Criar conta",
       "toLogin": "Já tenho conta"
+    },
+    "validation": {
+      "required": "Preencha este campo.",
+      "email": "Informe um e-mail válido.",
+      "document": "O CPF precisa ter 11 dígitos.",
+      "password": "A senha precisa de ao menos 8 caracteres."
     }
   },
   "errors": {

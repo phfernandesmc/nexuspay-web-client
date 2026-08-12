@@ -14,10 +14,22 @@ type EstadoSessao = {
   accessToken: string | null;
   user: Usuario | null;
   status: StatusSessao;
+  /**
+   * Codigo de erro que explica por que a sessao acabou, quando ha um.
+   *
+   * E o unico canal entre quem encerra a sessao (o interceptor de resposta,
+   * fora de qualquer componente) e a tela de login, que o router monta do
+   * zero — com o estado de erro dela nascendo `null`. Sem ele,
+   * REFRESH_TOKEN_REUSED joga o usuario no login sem nenhuma explicacao, o
+   * que e indistinguivel de um bug do app justamente no evento que pode ser
+   * roubo de token.
+   */
+  motivoEncerramento: string | null;
   autenticar: (token: string, user: Usuario) => void;
   definirToken: (token: string) => void;
-  encerrar: () => void;
+  encerrar: (motivo?: string) => void;
   marcarAnonimo: () => void;
+  limparMotivoEncerramento: () => void;
 };
 
 /**
@@ -35,10 +47,16 @@ export const useSession = create<EstadoSessao>((set) => ({
   accessToken: null,
   user: null,
   status: "booting",
-  autenticar: (accessToken, user) => set({ accessToken, user, status: "authenticated" }),
+  motivoEncerramento: null,
+  autenticar: (accessToken, user) =>
+    set({ accessToken, user, status: "authenticated", motivoEncerramento: null }),
   definirToken: (accessToken) => set({ accessToken }),
-  encerrar: () => set({ accessToken: null, user: null, status: "anonymous" }),
-  marcarAnonimo: () => set({ accessToken: null, user: null, status: "anonymous" }),
+  // Sair pelo botao nao tem motivo: o usuario sabe por que esta no login.
+  encerrar: (motivo) =>
+    set({ accessToken: null, user: null, status: "anonymous", motivoEncerramento: motivo ?? null }),
+  marcarAnonimo: () =>
+    set({ accessToken: null, user: null, status: "anonymous", motivoEncerramento: null }),
+  limparMotivoEncerramento: () => set({ motivoEncerramento: null }),
 }));
 
 /** Leitura fora de componente — o interceptor do Axios nao e um hook. */

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
@@ -26,8 +26,15 @@ function montar() {
 
 beforeEach(async () => {
   await i18n.changeLanguage("pt-BR");
-  useSession.setState({ accessToken: null, user: null, status: "anonymous" });
+  useSession.setState({
+    accessToken: null,
+    user: null,
+    status: "anonymous",
+    motivoEncerramento: null,
+  });
 });
+
+afterEach(() => vi.restoreAllMocks());
 
 describe("tela de login", () => {
   it("credencial correta autentica", async () => {
@@ -87,5 +94,64 @@ describe("tela de login", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Tentativas demais. Espere um minuto e tente de novo.",
     );
+  });
+
+  it("codigo FORA do catalogo mostra a mensagem generica, nunca o codigo cru", async () => {
+    // A familia HTTP_<status> nao e enumeravel — o gateway a emite para
+    // qualquer status sem codigo proprio — e o spec a define como o caso
+    // legitimo da mensagem generica. Passar o codigo cru para o t() faz o
+    // i18next devolver a PROPRIA CHAVE, e o usuario le "HTTP_502" na tela.
+    const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/auth/login`, () =>
+        HttpResponse.json(
+          { error: { code: "HTTP_502", message: "Bad Gateway", details: {} } },
+          { status: 502 },
+        ),
+      ),
+    );
+    montar();
+
+    await userEvent.type(screen.getByLabelText("E-mail"), "joao@example.com");
+    await userEvent.type(screen.getByLabelText("Senha"), "senha123");
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Algo deu errado. Tente novamente.",
+    );
+    expect(screen.queryByText(/HTTP_502/)).not.toBeInTheDocument();
+    // A divergencia com o gateway precisa APARECER para quem desenvolve.
+    expect(aviso).toHaveBeenCalledOnce();
+  });
+
+  it("e-mail que o zod recusa mostra o erro traduzido, em vez de botao mudo", async () => {
+    // Sem renderizar formState.errors o submit nunca acontece e nada muda na
+    // tela: o botao fica mudo para sempre, e o usuario nao tem como saber
+    // por que. As mensagens tambem nao podem vir do zod cru, que fala
+    // ingles e jargao de biblioteca.
+    montar();
+
+    await userEvent.type(screen.getByLabelText("E-mail"), "nao-e-email");
+    await userEvent.type(screen.getByLabelText("Senha"), "senha123");
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(await screen.findByText("Informe um e-mail válido.")).toBeInTheDocument();
+    expect(useSession.getState().status).toBe("anonymous");
+  });
+
+  it("mostra o motivo do encerramento deixado pelo interceptor", async () => {
+    // REFRESH_TOKEN_REUSED encerra a sessao fora de qualquer componente, e o
+    // router monta esta tela do zero. Sem o canal do store o usuario e
+    // jogado no login sem explicacao — indistinguivel de um bug do app, num
+    // evento que pode ser roubo de token.
+    useSession.setState({ motivoEncerramento: "REFRESH_TOKEN_REUSED" });
+
+    montar();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Por segurança, todas as suas sessões foram encerradas. Entre novamente.",
+    );
+    // Consumido uma unica vez: nao pode reaparecer no proximo login.
+    expect(useSession.getState().motivoEncerramento).toBeNull();
   });
 });

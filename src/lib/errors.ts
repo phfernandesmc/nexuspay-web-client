@@ -76,15 +76,30 @@ export function extrairErro(erro: unknown): ErroDaApi {
   return { code: "INTERNAL_ERROR", message: "", details: {} };
 }
 
-export function chaveDeTraducao(code: string): string {
+/**
+ * O codigo pronto para o `t(..., { ns: "errors" })`: o proprio codigo quando
+ * ele esta no catalogo, `UNKNOWN` quando nao esta.
+ *
+ * Existe porque o i18next devolve a PROPRIA CHAVE quando ela nao existe.
+ * Passar o codigo cru para o t() funciona para os 27 do catalogo e falha
+ * exatamente no caso que mais importa: a familia dinamica `HTTP_<status>`,
+ * que o gateway emite para status sem codigo proprio e que o spec define
+ * como o caso legitimo da mensagem generica. Sem esta funcao o usuario le
+ * "HTTP_502" na tela.
+ */
+export function codigoTraduzivel(code: string): string {
   if (conhecidos.has(code) || code === "NETWORK_ERROR") {
-    return `errors.${code}`;
+    return code;
   }
   console.warn(
     `[nexuspay] codigo de erro desconhecido vindo do gateway: ${code}. ` +
       `Acrescente-o a CODIGOS_DE_ERRO e aos dois dicionarios.`,
   );
-  return "errors.UNKNOWN";
+  return "UNKNOWN";
+}
+
+export function chaveDeTraducao(code: string): string {
+  return `errors.${codigoTraduzivel(code)}`;
 }
 
 export function camposInvalidos(erro: ErroDaApi): CampoInvalido[] {

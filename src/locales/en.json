@@ -22,6 +22,12 @@
       "password": "Password",
       "submit": "Create account",
       "toLogin": "I already have an account"
+    },
+    "validation": {
+      "required": "Please fill in this field.",
+      "email": "Enter a valid email address.",
+      "document": "The CPF must have 11 digits.",
+      "password": "The password needs at least 8 characters."
     }
   },
   "errors": {
