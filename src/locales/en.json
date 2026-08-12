@@ -24,5 +24,35 @@
       "toLogin": "I already have an account"
     }
   },
-  "errors": {}
+  "errors": {
+    "UNKNOWN": "Something went wrong. Please try again.",
+    "NETWORK_ERROR": "We couldn't reach the server. Check your connection.",
+    "INVALID_CREDENTIALS": "Incorrect email or password.",
+    "INVALID_TOKEN": "Your session isn't valid. Please sign in again.",
+    "TOKEN_EXPIRED": "Your session has expired.",
+    "REFRESH_TOKEN_REUSED": "For your security, all your sessions were ended. Please sign in again.",
+    "EMAIL_ALREADY_REGISTERED": "This email is already registered.",
+    "DOCUMENT_ALREADY_REGISTERED": "This CPF is already registered.",
+    "INVALID_DOCUMENT": "Invalid CPF.",
+    "WEAK_PASSWORD": "Password needs at least 8 characters, with one letter and one digit.",
+    "ACCOUNT_NOT_FOUND": "Account not found.",
+    "ACCOUNT_HAS_BALANCE": "An account with a balance can't be closed.",
+    "ACCOUNT_HAS_PENDING_TRANSACTIONS": "The account can't be closed while transactions are pending.",
+    "ACCOUNT_LIMIT_REACHED": "You've reached the limit of active accounts.",
+    "ACCOUNT_ALREADY_CLOSED": "This account is already closed.",
+    "ACCOUNT_NUMBER_GENERATION_FAILED": "We couldn't generate the account number. Please try again.",
+    "INSTITUTION_NOT_FOUND": "Institution not found.",
+    "CONTACT_NOT_FOUND": "Contact not found.",
+    "CONTACT_OWN_ACCOUNT": "You can't add your own account as a contact.",
+    "CONTACT_ALREADY_EXISTS": "This account is already in your contacts.",
+    "RATE_LIMIT_EXCEEDED": "Too many attempts. Wait a minute and try again.",
+    "VALIDATION_ERROR": "Check the highlighted fields.",
+    "TRANSACTION_NOT_FOUND": "Transaction not found.",
+    "INSUFFICIENT_FUNDS": "Not enough available balance.",
+    "SAME_ACCOUNT_TRANSFER": "Source and destination accounts must be different.",
+    "IDEMPOTENCY_KEY_REUSED": "This key was already used with different data.",
+    "NOT_FOUND": "We couldn't find what you were looking for.",
+    "METHOD_NOT_ALLOWED": "Operation not allowed.",
+    "INTERNAL_ERROR": "Something went wrong on our side. Please try again."
+  }
 }

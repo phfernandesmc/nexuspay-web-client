@@ -24,5 +24,35 @@
       "toLogin": "Já tenho conta"
     }
   },
-  "errors": {}
+  "errors": {
+    "UNKNOWN": "Algo deu errado. Tente novamente.",
+    "NETWORK_ERROR": "Não conseguimos falar com o servidor. Verifique sua conexão.",
+    "INVALID_CREDENTIALS": "E-mail ou senha incorretos.",
+    "INVALID_TOKEN": "Sua sessão não é válida. Entre novamente.",
+    "TOKEN_EXPIRED": "Sua sessão expirou.",
+    "REFRESH_TOKEN_REUSED": "Por segurança, todas as suas sessões foram encerradas. Entre novamente.",
+    "EMAIL_ALREADY_REGISTERED": "Este e-mail já está cadastrado.",
+    "DOCUMENT_ALREADY_REGISTERED": "Este CPF já está cadastrado.",
+    "INVALID_DOCUMENT": "CPF inválido.",
+    "WEAK_PASSWORD": "A senha precisa de ao menos 8 caracteres, com uma letra e um número.",
+    "ACCOUNT_NOT_FOUND": "Conta não encontrada.",
+    "ACCOUNT_HAS_BALANCE": "Não é possível encerrar uma conta com saldo.",
+    "ACCOUNT_HAS_PENDING_TRANSACTIONS": "Não é possível encerrar a conta com transações pendentes.",
+    "ACCOUNT_LIMIT_REACHED": "Você atingiu o limite de contas ativas.",
+    "ACCOUNT_ALREADY_CLOSED": "Esta conta já está encerrada.",
+    "ACCOUNT_NUMBER_GENERATION_FAILED": "Não conseguimos gerar o número da conta. Tente novamente.",
+    "INSTITUTION_NOT_FOUND": "Instituição não encontrada.",
+    "CONTACT_NOT_FOUND": "Contato não encontrado.",
+    "CONTACT_OWN_ACCOUNT": "Você não pode adicionar a própria conta como contato.",
+    "CONTACT_ALREADY_EXISTS": "Esta conta já está nos seus contatos.",
+    "RATE_LIMIT_EXCEEDED": "Tentativas demais. Espere um minuto e tente de novo.",
+    "VALIDATION_ERROR": "Confira os campos destacados.",
+    "TRANSACTION_NOT_FOUND": "Transação não encontrada.",
+    "INSUFFICIENT_FUNDS": "Saldo disponível insuficiente.",
+    "SAME_ACCOUNT_TRANSFER": "A conta de origem e a de destino precisam ser diferentes.",
+    "IDEMPOTENCY_KEY_REUSED": "Esta chave já foi usada com outros dados.",
+    "NOT_FOUND": "Não encontramos o que você procurava.",
+    "METHOD_NOT_ALLOWED": "Operação não permitida.",
+    "INTERNAL_ERROR": "Algo deu errado do nosso lado. Tente novamente."
+  }
 }
