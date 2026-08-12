@@ -1,10 +1,11 @@
 import { StrictMode } from "react";
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { http as mswHttp, HttpResponse } from "msw";
 import { servidor, URL_TESTE } from "@/test/msw";
 import { useSession } from "@/features/auth/session.store";
 import { useSessionBootstrap } from "@/features/auth/useSessionBootstrap";
+import { NOME_DA_TRAVA } from "@/lib/locks";
 
 const usuario = {
   id: "11111111-1111-1111-1111-111111111111",
@@ -15,7 +16,18 @@ const usuario = {
 };
 
 beforeEach(() => {
-  useSession.setState({ accessToken: null, user: null, status: "booting" });
+  useSession.setState({
+    accessToken: null,
+    user: null,
+    status: "booting",
+    motivoEncerramento: null,
+  });
+});
+
+// O jsdom nao implementa a Web Locks API: os demais testes deste arquivo
+// rodam pelo caminho SEM trava, que precisa continuar funcionando.
+afterEach(() => {
+  Reflect.deleteProperty(navigator, "locks");
 });
 
 describe("boot da sessao", () => {
@@ -139,5 +151,36 @@ describe("boot da sessao", () => {
     expect(warnSpy).toHaveBeenCalledTimes(1);
     expect(warnSpy.mock.calls[0]?.[0]).toContain("INTERNAL_ERROR");
     warnSpy.mockRestore();
+  });
+
+  it("o refresh do boot passa pela trava entre abas", async () => {
+    // Esta e a entrada mais perigosa das duas: TODA carga de pagina dispara
+    // um refresh silencioso. Duas abas abertas juntas, restaurar a sessao do
+    // navegador ou duplicar a aba sao dois /auth/refresh concorrentes com o
+    // mesmo cookie — e o gateway revoga todas as sessoes ao ver o token
+    // rotacionado ser reapresentado. O guarda de StrictMode nao ajuda aqui:
+    // ele e por instancia de componente, dentro de uma unica aba.
+    const pedidos: string[] = [];
+    Object.defineProperty(navigator, "locks", {
+      configurable: true,
+      value: {
+        request<T>(nome: string, cb: () => Promise<T>): Promise<T> {
+          pedidos.push(nome);
+          return cb();
+        },
+      },
+    });
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/auth/refresh`, () =>
+        HttpResponse.json({ access_token: "tok", token_type: "bearer", expires_in: 900 }),
+      ),
+      mswHttp.get(`${URL_TESTE}/auth/me`, () => HttpResponse.json(usuario)),
+    );
+
+    renderHook(() => useSessionBootstrap());
+
+    await waitFor(() => expect(useSession.getState().status).toBe("authenticated"));
+    // O MESMO nome do interceptor: filas separadas nao coordenam nada.
+    expect(pedidos).toEqual([NOME_DA_TRAVA]);
   });
 });
