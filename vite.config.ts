@@ -25,5 +25,6 @@ export default defineConfig({
     // host faria o cliente pedir num endereco e o MSW responder noutro — e a
     // falha apareceria como "requisicao nao mockada", que nao sugere .env.
     env: { VITE_API_URL: "http://localhost:8000/api/v1" },
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
 });
