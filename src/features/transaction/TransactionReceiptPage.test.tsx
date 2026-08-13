@@ -120,6 +120,28 @@ describe("recibo", () => {
     expect(buscas).toBeGreaterThan(antes);
   });
 
+  it("comprovante de DEPOSIT linka para a conta de destino, nunca um beco sem saida", async () => {
+    // Em DEPOSIT source_account_id e sempre null: o dinheiro nao sai de
+    // conta nenhuma. Um botao condicionado a source_account_id deixaria todo
+    // deposito sem caminho de volta ao extrato.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () =>
+        HttpResponse.json(
+          transacao({
+            type: "DEPOSIT",
+            source_account_id: null,
+            destination_account_id: "conta-que-recebeu",
+          }),
+        ),
+      ),
+    );
+
+    montar();
+
+    const link = await screen.findByRole("link", { name: "Ver o extrato" });
+    expect(link).toHaveAttribute("href", "/contas/conta-que-recebeu");
+  });
+
   it("traduz o motivo da falha POR CODIGO", async () => {
     servidor.use(
       mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () =>

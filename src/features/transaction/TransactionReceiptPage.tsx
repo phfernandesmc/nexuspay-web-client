@@ -30,6 +30,16 @@ export default function TransactionReceiptPage() {
 
   if (isPending) return null;
 
+  // Em DEPOSIT o dinheiro nao sai de conta nenhuma: source_account_id e
+  // sempre null. Um botao que so aparece com source_account_id deixaria
+  // todo comprovante de deposito sem caminho de volta. destination_account_id
+  // e obrigatorio nos dois tipos, entao ele e o destino certo para DEPOSIT e
+  // o fallback seguro se source_account_id vier nulo por algum motivo.
+  const contaDoRecibo =
+    transacao.type === "DEPOSIT"
+      ? transacao.destination_account_id
+      : (transacao.source_account_id ?? transacao.destination_account_id);
+
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-semibold">{t("transaction:receiptTitle")}</h1>
@@ -69,14 +79,9 @@ export default function TransactionReceiptPage() {
         <Button onClick={() => void refetch()} disabled={isFetching}>
           {isFetching ? t("transaction:refreshing") : t("transaction:refresh")}
         </Button>
-        {transacao.source_account_id && (
-          <Button
-            variant="outline"
-            render={<Link to={`/contas/${transacao.source_account_id}`} />}
-          >
-            {t("transaction:backToStatement")}
-          </Button>
-        )}
+        <Button variant="outline" render={<Link to={`/contas/${contaDoRecibo}`} />}>
+          {t("transaction:backToStatement")}
+        </Button>
       </div>
     </div>
   );
