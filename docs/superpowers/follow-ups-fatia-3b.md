@@ -27,13 +27,34 @@ recarregamento não.
 Nem por período, nem por status, nem por direção. O gateway não oferece, e
 para uma conta com muitas transações a navegação vira só "carregar mais".
 
-### O ciclo completo de encerrar conta não tem teste encadeado
+### O e2e não exercita paginação real do extrato
 
-Critério de aceitação 6 do spec (§11): conta encerrada some da lista, e
-continua acessível pelo detalhe com status encerrado. O que existe hoje
-prova só metade — que encerrar chama o servidor e invalida as consultas
-(`AccountDetailPage.test.tsx`, Task 6). Nenhum teste, unitário ou de ponta a
-ponta, monta a lista, encerra, confirma que a conta some dali, navega para o
-detalhe da mesma conta e confirma que ele responde com status `CLOSED` em
-vez de "não encontrada". Fechar isso exige um teste que encadeie as duas
-telas (`AccountsPage` → `AccountDetailPage`) ou um caminho no Playwright.
+A §9 do spec pede dois caminhos no Playwright: abrir uma conta e vê-la na
+lista, **e** "paginar o extrato de verdade". O primeiro existe
+(`tests/e2e/contas.spec.ts`, "abrir uma conta e ve-la na lista"). O segundo
+não: o teste que existe hoje, "conta nova tem extrato vazio", só prova o
+estado inicial sem transações — nunca gera uma segunda página nem exercita
+"Carregar mais" contra o servidor real.
+
+Gerar a transação necessária para isso exige um depósito ou uma
+transferência, e os dois são da Fatia 3c — não existem ainda nesta fatia.
+Além disso, mesmo que existissem, alimentar o worker que processa essas
+transações passa pela fila SQS `api-processar-transferencia-worker.fifo`,
+que é compartilhada entre desenvolvimento e produção; um teste automatizado
+não pode publicar nela só para gerar dados de fixture.
+
+É dívida legítima, não defeito: a 3b não tem como criar uma transação sem
+tocar numa fila que não é dela. **A Fatia 3c fecha isso** assim que tiver um
+caminho de depósito ou transferência disponível de ponta a ponta: gerar
+transações suficientes para uma segunda página (via o fluxo real da UI, não
+a fila diretamente), navegar até o extrato e exercitar "Carregar mais"
+contra o gateway de verdade.
+
+### O ciclo completo de encerrar conta agora tem teste encadeado
+
+Antigo item desta lista, resolvido: critério de aceitação 6 do spec (§11)
+— conta encerrada some da lista, e continua acessível pelo detalhe com
+status encerrado. `AccountLifecycle.test.tsx` agora monta `AccountsPage` e
+`AccountDetailPage` sob as mesmas rotas, encerra pela lista, confirma que a
+conta some dali, e confirma que o detalhe, acessado direto pela URL depois,
+responde com o status encerrado em vez de "não encontrada".
