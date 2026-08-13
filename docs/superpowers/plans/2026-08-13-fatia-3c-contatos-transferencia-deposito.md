@@ -999,7 +999,7 @@ export default function AddContactDialog({
 - [ ] **Step 7: Rode os testes e confirme que passam**
 
 Run: `npm test -- --run`
-Expected: PASS, 127 testes (122 anteriores + 5 novos).
+Expected: PASS, 132 testes (127 anteriores + 5 novos).
 
 - [ ] **Step 8: Prove que o teste da confirmação discrimina**
 
@@ -1454,7 +1454,7 @@ export default function ContactsPage() {
 - [ ] **Step 6: Rode os testes e confirme que passam**
 
 Run: `npm test -- --run`
-Expected: PASS, 133 testes (127 anteriores + 6 novos).
+Expected: PASS, 138 testes (132 anteriores + 6 novos).
 
 - [ ] **Step 7: Prove que o teste da ordenação discrimina**
 
@@ -1544,6 +1544,7 @@ E acrescente um bloco `transaction` no nível raiz de `src/locales/pt-BR.json`:
     "transferTitle": "Transferir",
     "depositTitle": "Depositar",
     "source": "Conta de origem",
+    "account": "Conta",
     "destination": "Destino",
     "savedContact": "Contato salvo",
     "newAccount": "Buscar outra conta",
@@ -1579,6 +1580,7 @@ Em `src/locales/en.json`, o mesmo bloco:
     "transferTitle": "Transfer",
     "depositTitle": "Deposit",
     "source": "Source account",
+    "account": "Account",
     "destination": "Destination",
     "savedContact": "Saved contact",
     "newAccount": "Search another account",
@@ -1903,7 +1905,7 @@ export default function TransactionReceiptPage() {
 - [ ] **Step 7: Rode os testes e confirme que passam**
 
 Run: `npm test -- --run`
-Expected: PASS, 140 testes (133 anteriores + 7 novos).
+Expected: PASS, 145 testes (138 anteriores + 7 novos).
 
 - [ ] **Step 8: Prove que dois testes discriminam**
 
@@ -2038,7 +2040,7 @@ describe("deposito", () => {
     montar();
     const usuario = userEvent.setup();
     await screen.findByRole("option", { name: /Principal/ });
-    await usuario.selectOptions(screen.getByLabelText("Conta de origem"), conta.id);
+    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
 
@@ -2070,7 +2072,7 @@ describe("deposito", () => {
     montar();
     const usuario = userEvent.setup();
     await screen.findByRole("option", { name: /Principal/ });
-    await usuario.selectOptions(screen.getByLabelText("Conta de origem"), conta.id);
+    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
 
@@ -2101,7 +2103,7 @@ describe("deposito", () => {
     montar();
     const usuario = userEvent.setup();
     await screen.findByRole("option", { name: /Principal/ });
-    await usuario.selectOptions(screen.getByLabelText("Conta de origem"), conta.id);
+    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
 
@@ -2121,7 +2123,7 @@ describe("deposito", () => {
     montar();
     const usuario = userEvent.setup();
     await screen.findByRole("option", { name: /Principal/ });
-    await usuario.selectOptions(screen.getByLabelText("Conta de origem"), conta.id);
+    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
 
@@ -2232,7 +2234,7 @@ export default function DepositPage() {
       <h1 className="text-2xl font-semibold">{t("transaction:depositTitle")}</h1>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="deposito-conta">{t("transaction:source")}</Label>
+        <Label htmlFor="deposito-conta">{t("transaction:account")}</Label>
         <select
           id="deposito-conta"
           className="rounded border px-2 py-1"
@@ -2275,7 +2277,7 @@ export default function DepositPage() {
 - [ ] **Step 5: Rode os testes e confirme que passam**
 
 Run: `npm test -- --run`
-Expected: PASS, 144 testes (140 anteriores + 4 novos).
+Expected: PASS, 149 testes (145 anteriores + 4 novos).
 
 - [ ] **Step 6: Prove que o teste do 200 discrimina**
 
@@ -2812,7 +2814,7 @@ export default function TransferPage() {
 - [ ] **Step 5: Rode os testes e confirme que passam**
 
 Run: `npm test -- --run`
-Expected: PASS, 150 testes (144 anteriores + 6 novos).
+Expected: PASS, 155 testes (149 anteriores + 6 novos).
 
 - [ ] **Step 6: Prove que dois testes discriminam**
 
@@ -2999,7 +3001,7 @@ Ajuste o `useTranslation` do topo para incluir o namespace `contact`:
 - [ ] **Step 4: Rode os testes e confirme que passam**
 
 Run: `npm test -- --run`
-Expected: PASS, 152 testes (150 anteriores + 2 novos).
+Expected: PASS, 157 testes (155 anteriores + 2 novos).
 
 - [ ] **Step 5: Commit**
 
@@ -3171,7 +3173,7 @@ Renomeie o `describe` de `"rotas de conta"` para `"rotas de conta e dinheiro"`, 
 - [ ] **Step 5: Rode os testes e confirme que passam**
 
 Run: `npm test -- --run`
-Expected: PASS, 154 testes.
+Expected: PASS, 159 testes.
 
 Run: `npm run build`
 Expected: sucesso.
@@ -3237,7 +3239,7 @@ test("depositar leva ao comprovante com a transacao aceita", async ({ page }) =>
   await abrirConta(page);
 
   await page.goto("/depositar");
-  await page.getByLabel("Conta de origem").selectOption({ index: 1 });
+  await page.getByLabel("Conta").selectOption({ index: 1 });
   await page.getByLabel("Valor").fill("250.00");
   await page.getByRole("button", { name: "Enviar" }).click();
 
@@ -3255,7 +3257,7 @@ test("o comprovante sobrevive ao recarregamento", async ({ page }) => {
   await abrirConta(page);
 
   await page.goto("/depositar");
-  await page.getByLabel("Conta de origem").selectOption({ index: 1 });
+  await page.getByLabel("Conta").selectOption({ index: 1 });
   await page.getByLabel("Valor").fill("10.00");
   await page.getByRole("button", { name: "Enviar" }).click();
   await expect(page.getByRole("heading", { name: "Comprovante" })).toBeVisible();
@@ -3340,7 +3342,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 Depois da Task 9, antes de qualquer merge:
 
-- `npm test -- --run` — 154 testes
+- `npm test -- --run` — 159 testes
 - `npm run build` — sucesso
 - `npx playwright test` — 7 testes, com o ambiente no ar
 - Paridade dos dois dicionários: nenhuma chave presente num e ausente no outro
