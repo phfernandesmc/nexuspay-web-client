@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **`@tanstack/react-query` na 5.101.4**, verificada no registro do npm (peer `react: ^18 || ^19`). Nenhuma outra versão do projeto muda.
+- **`@tanstack/react-query` na 5.101.4**, verificada no registro do npm (peer `react: ^18 || ^19`). Nenhuma outra versão do projeto muda. Declare com `^`, como as outras 35 dependências deste projeto — quem fixa a versão instalada é o `package-lock.json`, e cravar exato só esta criaria uma regra sem motivo técnico que a distinga das demais.
 - **API da v5, que difere da v4 em três pontos que quebram em silêncio:**
   - todos os hooks usam assinatura de **objeto**: `useQuery({ queryKey, queryFn })`, nunca posicional;
   - `useInfiniteQuery` exige **`initialPageParam` explícito** — na v4 o default vinha do `pageParam = 0` na assinatura, e isso não existe mais;
