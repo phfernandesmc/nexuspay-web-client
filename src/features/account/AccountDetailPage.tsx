@@ -57,8 +57,17 @@ export default function AccountDetailPage() {
         </Button>
       </div>
 
-      <RenameAccountDialog conta={conta} aberto={renomeando} onFechar={() => setRenomeando(false)} />
-      <CloseAccountDialog contaId={conta.id} aberto={encerrando} onFechar={() => setEncerrando(false)} />
+      {/* Montagem condicional, nao so `aberto`: o dialogo guarda estado
+          proprio (alias digitado, mensagem de erro). Mante-lo sempre montado
+          deixaria esse estado sobreviver ao cancelamento — reabrir mostraria
+          um erro que ja nao existe mais, ou um texto que o usuario nunca
+          confirmou. Desmontar ao fechar faz o estado morrer com o dialogo. */}
+      {renomeando && (
+        <RenameAccountDialog conta={conta} aberto={renomeando} onFechar={() => setRenomeando(false)} />
+      )}
+      {encerrando && (
+        <CloseAccountDialog contaId={conta.id} aberto={encerrando} onFechar={() => setEncerrando(false)} />
+      )}
 
       <StatementList contaId={conta.id} />
     </section>

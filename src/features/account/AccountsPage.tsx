@@ -43,7 +43,11 @@ export default function AccountsPage() {
           ))}
         </div>
       )}
-      <OpenAccountDialog aberto={abrindo} onFechar={() => setAbrindo(false)} />
+      {/* Montagem condicional, nao so `aberto`: sem isso o dialogo fica
+          sempre montado e o estado (instituicao, apelido, erro) sobrevive ao
+          cancelamento — reabrir mostraria dados de uma tentativa anterior.
+          Desmontar ao fechar faz o estado morrer com o dialogo. */}
+      {abrindo && <OpenAccountDialog aberto={abrindo} onFechar={() => setAbrindo(false)} />}
     </section>
   );
 }

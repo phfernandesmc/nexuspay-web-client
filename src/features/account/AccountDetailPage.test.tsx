@@ -76,6 +76,35 @@ describe("detalhe da conta", () => {
     );
   });
 
+  it("cancelar apos erro de saldo e reabrir nao mostra a mensagem sem o usuario ter clicado em nada", async () => {
+    // Reproduz o defeito da review final: o dialogo ficava sempre montado e
+    // o `if (!aberto) return null` vinha DEPOIS dos useState, entao o erro
+    // sobrevivia ao cancelamento. Reabrir mostrava "Nao e possivel encerrar
+    // uma conta com saldo" sem nenhuma nova tentativa — uma afirmacao falsa
+    // sobre dinheiro se o usuario tiver zerado a conta nesse meio-tempo.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts/${conta.id}`, () => HttpResponse.json(conta)),
+      mswHttp.delete(`${URL_TESTE}/accounts/${conta.id}`, () =>
+        HttpResponse.json(
+          { error: { code: "ACCOUNT_HAS_BALANCE", message: "x", details: {} } },
+          { status: 422 },
+        ),
+      ),
+    );
+    montar();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Encerrar conta" }));
+    await userEvent.click(screen.getByRole("button", { name: "Encerrar" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não é possível encerrar uma conta com saldo.",
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Encerrar conta" }));
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("encerrar conta com pendencia mostra mensagem DISTINTA da de saldo", async () => {
     // A fatia 2b acrescentou este erro justamente para impedir encerrar
     // conta com dinheiro a caminho. Confundi-lo com o de saldo faria o
