@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { http as mswHttp, HttpResponse } from "msw";
 import { servidor, URL_TESTE } from "@/test/msw";
 import { envolverComQuery } from "@/test/queryWrapper";
+import { criarQueryClient } from "@/app/queryClient";
+import { CHAVES } from "@/features/account/queries";
 import { useSession } from "@/features/auth/session.store";
 import PendingBalanceLine from "@/features/statement/PendingBalanceLine";
 import i18n from "@/app/i18n";
@@ -72,20 +75,59 @@ describe("linha de processamento", () => {
 
     envolverComQuery(<PendingBalanceLine contaId={CONTA} saldo="500.00" />);
 
-    await screen.findByTestId("sem-pendencias");
-    expect(limiteRecebido).toBe("100");
+    await waitFor(() => expect(limiteRecebido).toBe("100"));
   });
 
-  it("sem saidas pendentes a linha nao aparece", async () => {
+  it("sem saidas pendentes de verdade, a linha nao aparece", async () => {
     servidor.use(
       mswHttp.get(`${URL_TESTE}/accounts/${CONTA}/statement`, () =>
         HttpResponse.json({ items: [], next_cursor: null }),
       ),
     );
 
+    // QueryClient proprio (nao o de envolverComQuery) porque o teste precisa
+    // conferir o status REAL da consulta — sucesso vazio — e nao so que a
+    // tela ficou em branco. Branco tambem e o que aparece durante o
+    // carregamento, e era o que o erro de rede produzia antes do reparo: um
+    // teste que so olha a ausencia de elementos passaria nos tres casos.
+    const queryClient = criarQueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <PendingBalanceLine contaId={CONTA} saldo="500.00" />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() =>
+      expect(queryClient.getQueryState(CHAVES.extratoPendentes(CONTA))?.status).toBe("success"),
+    );
+
+    // So depois de confirmar que a consulta terminou com sucesso (nao que
+    // ainda esta carregando, nem que falhou) e que faz sentido afirmar que a
+    // ausencia de alerta e de linha de processamento significa "sem
+    // pendencias" — e nao "nao sabemos".
+    expect(screen.queryByText(/Em processamento/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("falha de rede mostra o alerta traduzido, nunca o estado de sem pendencias", async () => {
+    // Reproduz o defeito que a review pegou: antes do reparo, um erro de
+    // rede aqui fazia a linha desaparecer exatamente como "esta conta nao
+    // tem saida pendente" — o usuario lia "saldo cheio disponivel" quando
+    // ninguem sabia. Mesmo padrao de AccountsPage/AccountDetailPage/
+    // StatementList: alerta traduzido pelo codigo do erro, nunca silencio.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts/${CONTA}/statement`, () => HttpResponse.error()),
+    );
+
     envolverComQuery(<PendingBalanceLine contaId={CONTA} saldo="500.00" />);
 
-    await screen.findByTestId("sem-pendencias");
-    expect(screen.queryByText("Em processamento")).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Não conseguimos falar com o servidor. Verifique sua conexão.",
+      ),
+    );
+    // A segunda metade da prova: o estado de "sem pendencias" nao pode
+    // aparecer junto, disfarcando o erro de "esta tudo disponivel".
+    expect(screen.queryByText(/Em processamento/)).not.toBeInTheDocument();
   });
 });

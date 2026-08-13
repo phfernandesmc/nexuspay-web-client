@@ -49,5 +49,10 @@ export function usePendentesDeSaida(contaId: string) {
       .map((i) => paraCentavos(i.amount)),
   );
 
-  return { centavos, isPending: consulta.isPending };
+  return {
+    centavos,
+    isPending: consulta.isPending,
+    isError: consulta.isError,
+    error: consulta.error,
+  };
 }
