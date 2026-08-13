@@ -60,7 +60,7 @@ describe("lista de contas", () => {
     montar();
 
     const cartao = await screen.findByTestId(`conta-${conta.id}`);
-    expect(cartao.getAttribute("style")).toContain("#112233");
+    expect(cartao).toHaveStyle({ borderLeftColor: "#112233" });
   });
 
   it("conta sem apelido nao mostra vazio", async () => {
