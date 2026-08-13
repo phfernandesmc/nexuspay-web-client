@@ -8,17 +8,44 @@
 const FORMATO = /^(-?)(\d+)(?:\.(\d{1,2}))?$/;
 
 /**
+ * Descreve o valor invalido para a mensagem de erro, sem mentir.
+ *
+ * JSON.stringify(NaN) devolve "null", o que enganaria quem for depurar um
+ * NaN vindo do numero. JSON.stringify(undefined) devolve undefined (nao
+ * uma string), o que quebraria a interpolacao. Os dois casos sao tratados
+ * explicitamente para a mensagem sempre dizer a verdade.
+ */
+function descreverValor(valor: unknown): string {
+  if (typeof valor === "number" && Number.isNaN(valor)) return "NaN";
+  const texto = JSON.stringify(valor);
+  return texto === undefined ? String(valor) : texto;
+}
+
+/**
  * Converte o valor monetario da API em centavos.
  *
  * O Decimal do Pydantic chega como string ou como numero conforme a versao
- * — os testes da fatia 3a ja tratavam dos dois. Quando chega como numero, a
- * precisao ja foi decidida pelo servidor e o toFixed(2) so o normaliza.
+ * — os testes da fatia 3a ja tratavam dos dois. Os dois caminhos passam
+ * pela mesma expressao regular: um numero e convertido para string sem
+ * arredondar (String(valor), nunca toFixed) antes de ser validado, entao
+ * "1.234" como string e 1.234 como numero sao rejeitados do mesmo jeito —
+ * nao existe um segundo caminho que arredonde em silencio. Isso tambem
+ * cobre o caso classico de fronteira: (1.005).toFixed(2) devolve "1.00"
+ * por causa da representacao binaria, perdendo um centavo sem nenhum
+ * sinal; String(1.005) preserva os tres decimais e a regex rejeita.
  */
 export function paraCentavos(valor: string | number): number {
-  const texto = typeof valor === "number" ? valor.toFixed(2) : valor.trim();
+  if (valor === null || valor === undefined) {
+    throw new Error(`valor monetario invalido: ${descreverValor(valor)}`);
+  }
+  if (typeof valor === "number" && !Number.isFinite(valor)) {
+    throw new Error(`valor monetario invalido: ${descreverValor(valor)}`);
+  }
+
+  const texto = typeof valor === "number" ? String(valor) : valor.trim();
   const casado = FORMATO.exec(texto);
   if (casado === null) {
-    throw new Error(`valor monetario invalido: ${JSON.stringify(valor)}`);
+    throw new Error(`valor monetario invalido: ${descreverValor(valor)}`);
   }
   const [, sinal, inteiros, decimais = ""] = casado;
   const centavos = Number(inteiros) * 100 + Number(decimais.padEnd(2, "0"));
