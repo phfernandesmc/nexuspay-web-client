@@ -44,6 +44,22 @@ const deposito = {
   created_at: "2026-03-08T10:00:00Z",
 };
 
+const transferenciaEntreContasProprias = {
+  id: "tttttttt-0000-0000-0000-000000000003",
+  type: "TRANSFER" as const,
+  direction: "OUT" as const,
+  amount: "50.00",
+  status: "COMPLETED" as const,
+  is_between_own_accounts: true,
+  counterparty: {
+    holder_name: "A**** C****",
+    branch: "0001",
+    number: "12345678-0",
+    institution: instituicao,
+  },
+  created_at: "2026-03-10T09:00:00Z",
+};
+
 beforeEach(async () => {
   await i18n.changeLanguage("pt-BR");
   useSession.setState({
@@ -67,8 +83,10 @@ describe("extrato", () => {
     // "Em processamento" divide o mesmo <p> com a data formatada — sao nos
     // de texto irmaos, entao o texto concatenado do elemento nao e a string
     // isolada. getByText com string exata exige o elemento inteiro; regex
-    // casa a substring dentro do texto concatenado.
-    expect(screen.getByText(/Em processamento/)).toBeInTheDocument();
+    // casa substring. Ancorada no fim com o separador "· " exigido na
+    // frente, para nao aceitar "Em processamento" em qualquer lugar do
+    // documento — so no fim do texto concatenado desse <p>.
+    expect(screen.getByText(/· Em processamento$/)).toBeInTheDocument();
     expect(screen.getByText(/100,00/)).toBeInTheDocument();
   });
 
@@ -104,6 +122,18 @@ describe("extrato", () => {
 
     expect(await screen.findByText("Depósito")).toBeInTheDocument();
     expect(cursoresRecebidos).toEqual([null, "CURSOR-1"]);
+  });
+
+  it("transferencia entre contas proprias recebe rotulo distinto", async () => {
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts/${CONTA}/statement`, () =>
+        HttpResponse.json({ items: [transferenciaEntreContasProprias], next_cursor: null }),
+      ),
+    );
+    envolverComQuery(<StatementList contaId={CONTA} />);
+
+    expect(await screen.findByText("A**** C****")).toBeInTheDocument();
+    expect(screen.getByText("Entre suas contas")).toBeInTheDocument();
   });
 
   it("sem proxima pagina o botao some", async () => {
