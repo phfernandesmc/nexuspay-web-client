@@ -42,6 +42,24 @@ todas as sessões se receber um token já usado. Duas requisições que tomam 40
 ao mesmo tempo precisam compartilhar uma única chamada a `/auth/refresh` —
 `src/lib/http.ts` cuida disso, e `src/lib/http.test.ts` prova.
 
+## Estado do servidor
+
+Dados que vêm do gateway (contas, extrato, instituições) vivem no **TanStack
+Query**; a sessão (token de acesso, usuário logado) vive no **Zustand**
+(`src/features/auth/session.store.ts`). Nada é copiado de um para o outro —
+misturar os dois é como um dado de servidor acaba desatualizado sem que
+nenhum teste perceba.
+
+`refetchOnWindowFocus` está **desligado de propósito** em
+`src/app/queryClient.ts`: nada busca sozinho, nem por timer nem ao voltar
+para a aba. Os dados ainda renovam ao navegar, porque a consulta remonta e
+busca de novo se estiver velha (`staleTime` padrão zero).
+
+As chaves de cache das contas ficam todas em um lugar só,
+`src/features/account/queries.ts` (objeto `CHAVES`). A invalidação depende
+delas casarem exatamente — uma chave escrita à mão fora dali não invalida
+nada, e o sintoma é um saldo velho que só some ao recarregar a página.
+
 ## Erros
 
 Traduzidos por `error.code`, nunca por `error.message`. O catálogo vive em

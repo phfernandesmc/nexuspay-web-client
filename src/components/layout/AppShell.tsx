@@ -28,6 +28,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <NavLink to="/" className="rounded px-2 py-1 hover:bg-muted">
             {t("common:home")}
           </NavLink>
+          <NavLink to="/contas" className="rounded px-2 py-1 hover:bg-muted">
+            {t("common:accounts")}
+          </NavLink>
         </nav>
       </aside>
       <div className="flex flex-1 flex-col">

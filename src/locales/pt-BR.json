@@ -4,7 +4,8 @@
     "language": "Idioma",
     "logout": "Sair",
     "loading": "Carregando",
-    "home": "Início"
+    "home": "Início",
+    "accounts": "Contas"
   },
   "auth": {
     "login": {
@@ -81,7 +82,6 @@
     "rename": "Renomear",
     "close": "Encerrar conta",
     "closeConfirm": "Encerrar esta conta? Ela sai da sua lista.",
-    "notFound": "Conta não encontrada.",
     "save": "Salvar",
     "closeConfirmButton": "Encerrar"
   },
@@ -89,7 +89,6 @@
     "title": "Extrato",
     "empty": "Nenhuma transação nesta conta ainda.",
     "loadMore": "Carregar mais",
-    "noMore": "Não há mais transações",
     "pending": "Em processamento",
     "completed": "Concluída",
     "failed": "Recusada",

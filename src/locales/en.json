@@ -4,7 +4,8 @@
     "language": "Language",
     "logout": "Sign out",
     "loading": "Loading",
-    "home": "Home"
+    "home": "Home",
+    "accounts": "Accounts"
   },
   "auth": {
     "login": {
@@ -81,7 +82,6 @@
     "rename": "Rename",
     "close": "Close account",
     "closeConfirm": "Close this account? It will leave your list.",
-    "notFound": "Account not found.",
     "save": "Save",
     "closeConfirmButton": "Close"
   },
@@ -89,7 +89,6 @@
     "title": "Statement",
     "empty": "No transactions in this account yet.",
     "loadMore": "Load more",
-    "noMore": "No more transactions",
     "pending": "Processing",
     "completed": "Completed",
     "failed": "Declined",
