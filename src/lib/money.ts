@@ -10,13 +10,15 @@ const FORMATO = /^(-?)(\d+)(?:\.(\d{1,2}))?$/;
 /**
  * Descreve o valor invalido para a mensagem de erro, sem mentir.
  *
- * JSON.stringify(NaN) devolve "null", o que enganaria quem for depurar um
- * NaN vindo do numero. JSON.stringify(undefined) devolve undefined (nao
- * uma string), o que quebraria a interpolacao. Os dois casos sao tratados
- * explicitamente para a mensagem sempre dizer a verdade.
+ * JSON.stringify(NaN) e JSON.stringify(Infinity)/(-Infinity) devolvem
+ * "null" — o mesmo defeito nos dois casos —, o que enganaria quem for
+ * depurar um numero nao finito vindo da API. JSON.stringify(undefined)
+ * devolve undefined (nao uma string), o que quebraria a interpolacao. Os
+ * tres casos sao tratados explicitamente para a mensagem sempre dizer a
+ * verdade.
  */
 function descreverValor(valor: unknown): string {
-  if (typeof valor === "number" && Number.isNaN(valor)) return "NaN";
+  if (typeof valor === "number" && !Number.isFinite(valor)) return String(valor);
   const texto = JSON.stringify(valor);
   return texto === undefined ? String(valor) : texto;
 }

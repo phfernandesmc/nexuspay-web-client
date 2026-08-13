@@ -39,20 +39,22 @@ describe("paraCentavos", () => {
     expect(() => paraCentavos(1.005)).toThrow();
   });
 
-  it("rejeita numero nao finito", () => {
-    expect(() => paraCentavos(NaN)).toThrow();
-    expect(() => paraCentavos(Infinity)).toThrow();
-    expect(() => paraCentavos(-Infinity)).toThrow();
-  });
-
-  it("mensagem de erro para NaN diz a verdade, nao 'null'", () => {
-    // JSON.stringify(NaN) devolve "null", o que enganaria quem for depurar.
+  it("rejeita numero nao finito, com mensagem que diz a verdade em vez de 'null'", () => {
+    // JSON.stringify(NaN) e JSON.stringify(Infinity)/(-Infinity) devolvem
+    // "null" — o mesmo defeito nos tres casos —, o que enganaria quem for
+    // depurar. So toThrow() nao discrimina: passaria mesmo com a mensagem
+    // errada, entao a asercao verifica o texto da mensagem tambem.
     expect(() => paraCentavos(NaN)).toThrow(/NaN/);
-    try {
-      paraCentavos(NaN);
-      throw new Error("nao deveria chegar aqui");
-    } catch (erro) {
-      expect((erro as Error).message).not.toContain("null");
+    expect(() => paraCentavos(Infinity)).toThrow(/Infinity/);
+    expect(() => paraCentavos(-Infinity)).toThrow(/-Infinity/);
+
+    for (const valor of [NaN, Infinity, -Infinity]) {
+      try {
+        paraCentavos(valor);
+        throw new Error("nao deveria chegar aqui");
+      } catch (erro) {
+        expect((erro as Error).message).not.toContain("null");
+      }
     }
   });
 
