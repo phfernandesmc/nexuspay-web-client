@@ -62,4 +62,20 @@ describe("chave de intencao", () => {
 
     expect(result.current.chave).toBe(primeira);
   });
+
+  it("ordem diferente dos itens de um array MUDA a intencao", () => {
+    // Ordem de chave de objeto nao importa, mas ordem de array importa: um
+    // array reordenado e um payload diferente (ex.: prioridade de itens,
+    // sequencia de operacoes). Se a assinatura ignorasse isso, duas intencoes
+    // diferentes colidiriam na mesma chave.
+    const { result, rerender } = renderHook(
+      ({ p }) => useChaveDeIntencao(p),
+      { initialProps: { p: { itens: ["a", "b", "c"] } } },
+    );
+    const primeira = result.current.chave;
+
+    rerender({ p: { itens: ["c", "b", "a"] } });
+
+    expect(result.current.chave).not.toBe(primeira);
+  });
 });
