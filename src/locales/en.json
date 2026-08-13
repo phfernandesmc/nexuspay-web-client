@@ -60,5 +60,17 @@
     "NOT_FOUND": "We couldn't find what you were looking for.",
     "METHOD_NOT_ALLOWED": "Operation not allowed.",
     "INTERNAL_ERROR": "Something went wrong on our side. Please try again."
+  },
+  "account": {
+    "title": "Your accounts",
+    "empty": "You don't have any accounts yet. Open your first one.",
+    "open": "Open account",
+    "branch": "Branch",
+    "number": "Account",
+    "balance": "Balance",
+    "checking": "Checking",
+    "savings": "Savings",
+    "closed": "Closed",
+    "noAlias": "No nickname"
   }
 }

@@ -60,5 +60,17 @@
     "NOT_FOUND": "Não encontramos o que você procurava.",
     "METHOD_NOT_ALLOWED": "Operação não permitida.",
     "INTERNAL_ERROR": "Algo deu errado do nosso lado. Tente novamente."
+  },
+  "account": {
+    "title": "Suas contas",
+    "empty": "Você ainda não tem contas. Abra a primeira.",
+    "open": "Abrir conta",
+    "branch": "Agência",
+    "number": "Conta",
+    "balance": "Saldo",
+    "checking": "Corrente",
+    "savings": "Poupança",
+    "closed": "Encerrada",
+    "noAlias": "Sem apelido"
   }
 }

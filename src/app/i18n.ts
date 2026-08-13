@@ -15,7 +15,7 @@ void i18n
     // pt-BR e o fallback porque o dominio e brasileiro: CPF, agencia, conta.
     fallbackLng: "pt-BR",
     supportedLngs: IDIOMAS,
-    ns: ["common", "auth", "errors"],
+    ns: ["common", "auth", "errors", "account"],
     defaultNS: "common",
     detection: {
       order: ["localStorage", "navigator"],
