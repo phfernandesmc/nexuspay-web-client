@@ -95,5 +95,29 @@
     "ownTransfer": "Between your accounts",
     "processing": "Processing",
     "available": "Available"
+  },
+  "contact": {
+    "title": "Contacts",
+    "add": "Add contact",
+    "addTitle": "Add contact",
+    "institution": "Institution",
+    "branch": "Branch",
+    "number": "Account number",
+    "search": "Search",
+    "searching": "Searching...",
+    "found": "Account found",
+    "holder": "Holder",
+    "alias": "Nickname",
+    "save": "Save contact",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "searchAgain": "Search another account",
+    "empty": "You don't have any contacts yet.",
+    "favorite": "Add to favorites",
+    "unfavorite": "Remove from favorites",
+    "rename": "Rename",
+    "remove": "Remove",
+    "removeConfirm": "Remove this contact? This does not affect transfers already made.",
+    "removeConfirmButton": "Remove"
   }
 }

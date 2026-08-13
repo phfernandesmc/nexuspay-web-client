@@ -95,5 +95,29 @@
     "ownTransfer": "Entre suas contas",
     "processing": "Em processamento",
     "available": "Disponível"
+  },
+  "contact": {
+    "title": "Contatos",
+    "add": "Adicionar contato",
+    "addTitle": "Adicionar contato",
+    "institution": "Instituição",
+    "branch": "Agência",
+    "number": "Número da conta",
+    "search": "Buscar",
+    "searching": "Buscando...",
+    "found": "Conta encontrada",
+    "holder": "Titular",
+    "alias": "Apelido",
+    "save": "Salvar contato",
+    "saving": "Salvando...",
+    "cancel": "Cancelar",
+    "searchAgain": "Buscar outra conta",
+    "empty": "Você ainda não tem contatos.",
+    "favorite": "Favoritar",
+    "unfavorite": "Desfavoritar",
+    "rename": "Renomear",
+    "remove": "Remover",
+    "removeConfirm": "Remover este contato? Isso não afeta transferências já feitas.",
+    "removeConfirmButton": "Remover"
   }
 }
