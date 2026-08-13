@@ -77,6 +77,12 @@
     "type": "Type",
     "alias": "Nickname (optional)",
     "confirm": "Open",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "rename": "Rename",
+    "close": "Close account",
+    "closeConfirm": "Close this account? It will leave your list.",
+    "notFound": "Account not found.",
+    "save": "Save",
+    "closeConfirmButton": "Close"
   }
 }

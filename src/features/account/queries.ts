@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { abrirConta, buscarConta, listarContas, listarInstituicoes } from "@/features/account/api";
+import {
+  abrirConta,
+  buscarConta,
+  encerrarConta,
+  listarContas,
+  listarInstituicoes,
+  renomearConta,
+} from "@/features/account/api";
 
 /**
  * As chaves de cache do projeto inteiro, em um lugar so.
@@ -44,5 +51,29 @@ export function useAbrirConta() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: CHAVES.contas() });
     },
+  });
+}
+
+/** Invalida tudo que depende de uma conta especifica, mais a lista. */
+function invalidarConta(qc: ReturnType<typeof useQueryClient>, id: string) {
+  void qc.invalidateQueries({ queryKey: CHAVES.contas() });
+  void qc.invalidateQueries({ queryKey: CHAVES.conta(id) });
+  void qc.invalidateQueries({ queryKey: CHAVES.extrato(id) });
+  void qc.invalidateQueries({ queryKey: CHAVES.extratoPendentes(id) });
+}
+
+export function useRenomearConta(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (alias: string | null) => renomearConta(id, alias),
+    onSuccess: () => invalidarConta(qc, id),
+  });
+}
+
+export function useEncerrarConta(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => encerrarConta(id),
+    onSuccess: () => invalidarConta(qc, id),
   });
 }

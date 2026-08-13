@@ -77,6 +77,12 @@
     "type": "Tipo",
     "alias": "Apelido (opcional)",
     "confirm": "Abrir",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "rename": "Renomear",
+    "close": "Encerrar conta",
+    "closeConfirm": "Encerrar esta conta? Ela sai da sua lista.",
+    "notFound": "Conta não encontrada.",
+    "save": "Salvar",
+    "closeConfirmButton": "Encerrar"
   }
 }
