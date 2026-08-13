@@ -94,6 +94,8 @@
     "completed": "Completed",
     "failed": "Declined",
     "deposit": "Deposit",
-    "ownTransfer": "Between your accounts"
+    "ownTransfer": "Between your accounts",
+    "processing": "Processing",
+    "available": "Available"
   }
 }

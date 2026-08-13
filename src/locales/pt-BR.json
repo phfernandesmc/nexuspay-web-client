@@ -94,6 +94,8 @@
     "completed": "Concluída",
     "failed": "Recusada",
     "deposit": "Depósito",
-    "ownTransfer": "Entre suas contas"
+    "ownTransfer": "Entre suas contas",
+    "processing": "Em processamento",
+    "available": "Disponível"
   }
 }

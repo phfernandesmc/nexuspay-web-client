@@ -7,6 +7,7 @@ import { useConta } from "@/features/account/queries";
 import RenameAccountDialog from "@/features/account/RenameAccountDialog";
 import CloseAccountDialog from "@/features/account/CloseAccountDialog";
 import StatementList from "@/features/statement/StatementList";
+import PendingBalanceLine from "@/features/statement/PendingBalanceLine";
 import { formatarDinheiro, paraCentavos } from "@/lib/money";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 
@@ -45,6 +46,7 @@ export default function AccountDetailPage() {
       <p className="mt-4 text-3xl font-semibold">
         {formatarDinheiro(paraCentavos(conta.balance), locale)}
       </p>
+      <PendingBalanceLine contaId={conta.id} saldo={conta.balance} />
 
       <div className="mt-4 flex gap-2">
         <Button variant="outline" onClick={() => setRenomeando(true)}>
