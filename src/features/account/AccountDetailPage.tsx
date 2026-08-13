@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useConta } from "@/features/account/queries";
 import RenameAccountDialog from "@/features/account/RenameAccountDialog";
 import CloseAccountDialog from "@/features/account/CloseAccountDialog";
+import StatementList from "@/features/statement/StatementList";
 import { formatarDinheiro, paraCentavos } from "@/lib/money";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 
@@ -56,6 +57,8 @@ export default function AccountDetailPage() {
 
       <RenameAccountDialog conta={conta} aberto={renomeando} onFechar={() => setRenomeando(false)} />
       <CloseAccountDialog contaId={conta.id} aberto={encerrando} onFechar={() => setEncerrando(false)} />
+
+      <StatementList contaId={conta.id} />
     </section>
   );
 }

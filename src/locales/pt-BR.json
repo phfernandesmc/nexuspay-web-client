@@ -84,5 +84,16 @@
     "notFound": "Conta não encontrada.",
     "save": "Salvar",
     "closeConfirmButton": "Encerrar"
+  },
+  "statement": {
+    "title": "Extrato",
+    "empty": "Nenhuma transação nesta conta ainda.",
+    "loadMore": "Carregar mais",
+    "noMore": "Não há mais transações",
+    "pending": "Em processamento",
+    "completed": "Concluída",
+    "failed": "Recusada",
+    "deposit": "Depósito",
+    "ownTransfer": "Entre suas contas"
   }
 }

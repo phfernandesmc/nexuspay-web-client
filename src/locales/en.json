@@ -84,5 +84,16 @@
     "notFound": "Account not found.",
     "save": "Save",
     "closeConfirmButton": "Close"
+  },
+  "statement": {
+    "title": "Statement",
+    "empty": "No transactions in this account yet.",
+    "loadMore": "Load more",
+    "noMore": "No more transactions",
+    "pending": "Processing",
+    "completed": "Completed",
+    "failed": "Declined",
+    "deposit": "Deposit",
+    "ownTransfer": "Between your accounts"
   }
 }
