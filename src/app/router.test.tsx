@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { http as mswHttp, HttpResponse } from "msw";
 import { servidor, URL_TESTE } from "@/test/msw";
 import { useSession } from "@/features/auth/session.store";
 import { http as clienteHttp } from "@/lib/http";
+import { criarQueryClient } from "@/app/queryClient";
 import App from "@/App";
 import i18n from "@/app/i18n";
 
@@ -157,5 +159,53 @@ describe("roteamento", () => {
       "Por segurança, todas as suas sessões foram encerradas. Entre novamente.",
     );
     expect(useSession.getState().status).toBe("anonymous");
+  });
+});
+
+describe("rotas de conta", () => {
+  // Estas duas rotas consomem react-query (useContas/useConta), que o
+  // App sozinho nao provisiona — em producao quem envolve e main.tsx. Sem
+  // este provider aqui, montar cai no erro "No QueryClient set".
+  function montarAutenticado() {
+    return render(
+      <QueryClientProvider client={criarQueryClient()}>
+        <App />
+      </QueryClientProvider>,
+    );
+  }
+
+  beforeEach(() => {
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/auth/refresh`, () =>
+        HttpResponse.json({ access_token: "tok", token_type: "bearer", expires_in: 900 }),
+      ),
+      mswHttp.get(`${URL_TESTE}/auth/me`, () => HttpResponse.json(usuario)),
+    );
+  });
+
+  it("navegar para /contas mostra o titulo da lista", async () => {
+    window.history.pushState({}, "", "/contas");
+    servidor.use(mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([])));
+
+    montarAutenticado();
+
+    expect(await screen.findByRole("heading", { name: "Suas contas" })).toBeInTheDocument();
+  });
+
+  it("/contas/:id inexistente mostra a mensagem de nao encontrada", async () => {
+    const idInexistente = "00000000-0000-0000-0000-000000000000";
+    window.history.pushState({}, "", `/contas/${idInexistente}`);
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts/${idInexistente}`, () =>
+        HttpResponse.json(
+          { error: { code: "ACCOUNT_NOT_FOUND", message: "x", details: {} } },
+          { status: 404 },
+        ),
+      ),
+    );
+
+    montarAutenticado();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Conta não encontrada.");
   });
 });

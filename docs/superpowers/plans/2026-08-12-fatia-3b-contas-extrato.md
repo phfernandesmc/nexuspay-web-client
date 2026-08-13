@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **`@tanstack/react-query` na 5.101.4**, verificada no registro do npm (peer `react: ^18 || ^19`). Nenhuma outra versão do projeto muda.
+- **`@tanstack/react-query` na 5.101.4**, verificada no registro do npm (peer `react: ^18 || ^19`). Nenhuma outra versão do projeto muda. Declare com `^`, como as outras 35 dependências deste projeto — quem fixa a versão instalada é o `package-lock.json`, e cravar exato só esta criaria uma regra sem motivo técnico que a distinga das demais.
 - **API da v5, que difere da v4 em três pontos que quebram em silêncio:**
   - todos os hooks usam assinatura de **objeto**: `useQuery({ queryKey, queryFn })`, nunca posicional;
   - `useInfiniteQuery` exige **`initialPageParam` explícito** — na v4 o default vinha do `pageParam = 0` na assinatura, e isso não existe mais;
@@ -942,7 +942,7 @@ import { useTranslation } from "react-i18next";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AccountCard from "@/features/account/AccountCard";
 import { useContas } from "@/features/account/queries";
-import { chaveDeTraducao, extrairErro } from "@/lib/errors";
+import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 
 export default function AccountsPage() {
   const { t } = useTranslation(["account", "common", "errors"]);
@@ -954,7 +954,7 @@ export default function AccountsPage() {
     return (
       <Alert variant="destructive" role="alert">
         <AlertDescription>
-          {t(chaveDeTraducao(extrairErro(error).code), { ns: "errors" })}
+          {t(codigoTraduzivel(extrairErro(error).code), { ns: "errors" })}
         </AlertDescription>
       </Alert>
     );
@@ -977,7 +977,7 @@ export default function AccountsPage() {
 }
 ```
 
-O `chaveDeTraducao` aqui é usado pelo efeito colateral de avisar no console em código desconhecido; o `t` recebe o retorno dele, que já é `errors.<CODIGO>` ou `errors.UNKNOWN`. **Confira como a Fatia 3a resolveu isso em `LoginPage.tsx`** e siga o mesmo padrão — houve uma correção lá sobre o separador de namespace, e repetir o erro custaria mostrar a chave crua ao usuário.
+**Use `codigoTraduzivel`, não `chaveDeTraducao`.** Os dois existem em `@/lib/errors` e fazem coisas diferentes: `codigoTraduzivel` devolve o **código** — `INVALID_CREDENTIALS` ou `UNKNOWN` — para ser combinado com `{ ns: "errors" }`, enquanto `chaveDeTraducao` devolve `errors.<CODIGO>`, com o prefixo já embutido. Combinar o segundo com `{ ns: "errors" }` produz `errors:errors.CODIGO`, que o i18next não resolve — e o usuário lê a chave crua na tela. Foi um defeito real corrigido na Fatia 3a; `src/features/auth/LoginPage.tsx` tem o padrão certo. Os dois avisam no console quando o código é desconhecido.
 
 - [ ] **Step 6: Rodar e ver passar**
 
@@ -1154,7 +1154,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAbrirConta, useInstituicoes } from "@/features/account/queries";
 import type { TipoConta } from "@/features/account/types";
-import { chaveDeTraducao, extrairErro } from "@/lib/errors";
+import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 
 export default function OpenAccountDialog({
   aberto,
@@ -1183,7 +1183,7 @@ export default function OpenAccountDialog({
       });
       onFechar();
     } catch (falha) {
-      setErro(t(chaveDeTraducao(extrairErro(falha).code), { ns: "errors" }));
+      setErro(t(codigoTraduzivel(extrairErro(falha).code), { ns: "errors" }));
     }
   }
 
@@ -1490,7 +1490,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRenomearConta } from "@/features/account/queries";
 import type { Conta } from "@/features/account/types";
-import { chaveDeTraducao, extrairErro } from "@/lib/errors";
+import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 
 export default function RenameAccountDialog({
   conta,
@@ -1514,7 +1514,7 @@ export default function RenameAccountDialog({
       await renomear.mutateAsync(alias.trim() === "" ? null : alias.trim());
       onFechar();
     } catch (falha) {
-      setErro(t(chaveDeTraducao(extrairErro(falha).code), { ns: "errors" }));
+      setErro(t(codigoTraduzivel(extrairErro(falha).code), { ns: "errors" }));
     }
   }
 
@@ -1558,7 +1558,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEncerrarConta } from "@/features/account/queries";
-import { chaveDeTraducao, extrairErro } from "@/lib/errors";
+import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 
 export default function CloseAccountDialog({
   contaId,
@@ -1586,7 +1586,7 @@ export default function CloseAccountDialog({
       // O erro fica NO DIALOGO, nao na pagina: fechar aqui esconderia o
       // motivo, e os dois erros possiveis pedem acoes diferentes do usuario
       // — zerar o saldo, ou esperar a transacao pendente resolver.
-      setErro(t(chaveDeTraducao(extrairErro(falha).code), { ns: "errors" }));
+      setErro(t(codigoTraduzivel(extrairErro(falha).code), { ns: "errors" }));
     }
   }
 
@@ -1631,7 +1631,7 @@ import { useConta } from "@/features/account/queries";
 import RenameAccountDialog from "@/features/account/RenameAccountDialog";
 import CloseAccountDialog from "@/features/account/CloseAccountDialog";
 import { formatarDinheiro, paraCentavos } from "@/lib/money";
-import { chaveDeTraducao, extrairErro } from "@/lib/errors";
+import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 
 const ROTULO_TIPO = { CHECKING: "account:checking", SAVINGS: "account:savings" } as const;
 
@@ -1648,7 +1648,7 @@ export default function AccountDetailPage() {
     return (
       <Alert variant="destructive" role="alert">
         <AlertDescription>
-          {t(chaveDeTraducao(extrairErro(error).code), { ns: "errors" })}
+          {t(codigoTraduzivel(extrairErro(error).code), { ns: "errors" })}
         </AlertDescription>
       </Alert>
     );
@@ -2049,7 +2049,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import StatementRow from "@/features/statement/StatementRow";
 import { useExtrato } from "@/features/statement/queries";
-import { chaveDeTraducao, extrairErro } from "@/lib/errors";
+import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 
 export default function StatementList({ contaId }: { contaId: string }) {
   const { t } = useTranslation(["statement", "common", "errors"]);
@@ -2069,7 +2069,7 @@ export default function StatementList({ contaId }: { contaId: string }) {
     return (
       <Alert variant="destructive" role="alert">
         <AlertDescription>
-          {t(chaveDeTraducao(extrairErro(error).code), { ns: "errors" })}
+          {t(codigoTraduzivel(extrairErro(error).code), { ns: "errors" })}
         </AlertDescription>
       </Alert>
     );

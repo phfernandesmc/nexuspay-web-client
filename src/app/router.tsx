@@ -6,6 +6,8 @@ import LoginPage from "@/features/auth/LoginPage";
 import RegisterPage from "@/features/auth/RegisterPage";
 import HomePage from "@/pages/HomePage";
 import AppShell from "@/components/layout/AppShell";
+import AccountsPage from "@/features/account/AccountsPage";
+import AccountDetailPage from "@/features/account/AccountDetailPage";
 
 function TelaDeCarga() {
   const { t } = useTranslation("common");
@@ -39,6 +41,30 @@ export default function Router() {
             autenticado ? (
               <AppShell>
                 <HomePage />
+              </AppShell>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/contas"
+          element={
+            autenticado ? (
+              <AppShell>
+                <AccountsPage />
+              </AppShell>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/contas/:id"
+          element={
+            autenticado ? (
+              <AppShell>
+                <AccountDetailPage />
               </AppShell>
             ) : (
               <Navigate to="/login" replace />

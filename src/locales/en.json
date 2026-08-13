@@ -4,7 +4,8 @@
     "language": "Language",
     "logout": "Sign out",
     "loading": "Loading",
-    "home": "Home"
+    "home": "Home",
+    "accounts": "Accounts"
   },
   "auth": {
     "login": {
@@ -60,5 +61,39 @@
     "NOT_FOUND": "We couldn't find what you were looking for.",
     "METHOD_NOT_ALLOWED": "Operation not allowed.",
     "INTERNAL_ERROR": "Something went wrong on our side. Please try again."
+  },
+  "account": {
+    "title": "Your accounts",
+    "empty": "You don't have any accounts yet. Open your first one.",
+    "open": "Open account",
+    "branch": "Branch",
+    "number": "Account",
+    "checking": "Checking",
+    "savings": "Savings",
+    "closed": "Closed",
+    "noAlias": "No nickname",
+    "openTitle": "Open an account",
+    "institution": "Institution",
+    "type": "Type",
+    "alias": "Nickname (optional)",
+    "confirm": "Open",
+    "cancel": "Cancel",
+    "rename": "Rename",
+    "close": "Close account",
+    "closeConfirm": "Close this account? It will leave your list.",
+    "save": "Save",
+    "closeConfirmButton": "Close"
+  },
+  "statement": {
+    "title": "Statement",
+    "empty": "No transactions in this account yet.",
+    "loadMore": "Load more",
+    "pending": "Processing",
+    "completed": "Completed",
+    "failed": "Declined",
+    "deposit": "Deposit",
+    "ownTransfer": "Between your accounts",
+    "processing": "Processing",
+    "available": "Available"
   }
 }

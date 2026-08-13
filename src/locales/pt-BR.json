@@ -4,7 +4,8 @@
     "language": "Idioma",
     "logout": "Sair",
     "loading": "Carregando",
-    "home": "Início"
+    "home": "Início",
+    "accounts": "Contas"
   },
   "auth": {
     "login": {
@@ -60,5 +61,39 @@
     "NOT_FOUND": "Não encontramos o que você procurava.",
     "METHOD_NOT_ALLOWED": "Operação não permitida.",
     "INTERNAL_ERROR": "Algo deu errado do nosso lado. Tente novamente."
+  },
+  "account": {
+    "title": "Suas contas",
+    "empty": "Você ainda não tem contas. Abra a primeira.",
+    "open": "Abrir conta",
+    "branch": "Agência",
+    "number": "Conta",
+    "checking": "Corrente",
+    "savings": "Poupança",
+    "closed": "Encerrada",
+    "noAlias": "Sem apelido",
+    "openTitle": "Abrir uma conta",
+    "institution": "Instituição",
+    "type": "Tipo",
+    "alias": "Apelido (opcional)",
+    "confirm": "Abrir",
+    "cancel": "Cancelar",
+    "rename": "Renomear",
+    "close": "Encerrar conta",
+    "closeConfirm": "Encerrar esta conta? Ela sai da sua lista.",
+    "save": "Salvar",
+    "closeConfirmButton": "Encerrar"
+  },
+  "statement": {
+    "title": "Extrato",
+    "empty": "Nenhuma transação nesta conta ainda.",
+    "loadMore": "Carregar mais",
+    "pending": "Em processamento",
+    "completed": "Concluída",
+    "failed": "Recusada",
+    "deposit": "Depósito",
+    "ownTransfer": "Entre suas contas",
+    "processing": "Em processamento",
+    "available": "Disponível"
   }
 }
