@@ -42,7 +42,7 @@ test("abrir uma conta e ve-la na lista", async ({ page }) => {
   await page.getByRole("button", { name: "Abrir conta" }).click();
   await page.getByLabel("Instituição").selectOption({ index: 1 });
   await page.getByLabel("Apelido (opcional)").fill("Minha primeira");
-  await page.getByRole("button", { name: "Abrir" }).click();
+  await page.getByRole("button", { name: "Abrir", exact: true }).click();
 
   await expect(page.getByText("Minha primeira")).toBeVisible();
   await expect(page.getByText(/R\$\s?0,00/)).toBeVisible();
@@ -53,7 +53,7 @@ test("conta nova tem extrato vazio", async ({ page }) => {
   await page.getByRole("link", { name: "Contas" }).click();
   await page.getByRole("button", { name: "Abrir conta" }).click();
   await page.getByLabel("Instituição").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Abrir" }).click();
+  await page.getByRole("button", { name: "Abrir", exact: true }).click();
 
   await page.getByText("Sem apelido").click();
 
