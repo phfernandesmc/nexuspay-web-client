@@ -1,12 +1,16 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import AccountCard from "@/features/account/AccountCard";
+import OpenAccountDialog from "@/features/account/OpenAccountDialog";
 import { useContas } from "@/features/account/queries";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 
 export default function AccountsPage() {
   const { t } = useTranslation(["account", "common", "errors"]);
   const { data: contas, isPending, isError, error } = useContas();
+  const [abrindo, setAbrindo] = useState(false);
 
   if (isPending) return <p>{t("common:loading")}</p>;
 
@@ -26,7 +30,10 @@ export default function AccountsPage() {
 
   return (
     <section>
-      <h1 className="text-2xl font-semibold">{t("account:title")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">{t("account:title")}</h1>
+        <Button onClick={() => setAbrindo(true)}>{t("account:open")}</Button>
+      </div>
       {contas.length === 0 ? (
         <p className="mt-4 text-muted-foreground">{t("account:empty")}</p>
       ) : (
@@ -36,6 +43,7 @@ export default function AccountsPage() {
           ))}
         </div>
       )}
+      <OpenAccountDialog aberto={abrindo} onFechar={() => setAbrindo(false)} />
     </section>
   );
 }

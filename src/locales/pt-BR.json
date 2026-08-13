@@ -71,6 +71,12 @@
     "checking": "Corrente",
     "savings": "Poupança",
     "closed": "Encerrada",
-    "noAlias": "Sem apelido"
+    "noAlias": "Sem apelido",
+    "openTitle": "Abrir uma conta",
+    "institution": "Instituição",
+    "type": "Tipo",
+    "alias": "Apelido (opcional)",
+    "confirm": "Abrir",
+    "cancel": "Cancelar"
   }
 }

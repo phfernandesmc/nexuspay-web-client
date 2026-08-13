@@ -71,6 +71,12 @@
     "checking": "Checking",
     "savings": "Savings",
     "closed": "Closed",
-    "noAlias": "No nickname"
+    "noAlias": "No nickname",
+    "openTitle": "Open an account",
+    "institution": "Institution",
+    "type": "Type",
+    "alias": "Nickname (optional)",
+    "confirm": "Open",
+    "cancel": "Cancel"
   }
 }

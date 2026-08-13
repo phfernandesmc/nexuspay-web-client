@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { buscarConta, listarContas, listarInstituicoes } from "@/features/account/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { abrirConta, buscarConta, listarContas, listarInstituicoes } from "@/features/account/api";
 
 /**
  * As chaves de cache do projeto inteiro, em um lugar so.
@@ -31,5 +31,18 @@ export function useInstituicoes() {
     // O catalogo praticamente nao muda; buscar a cada montagem seria
     // requisicao desperdicada em toda abertura do dialogo.
     staleTime: 60 * 60 * 1000,
+  });
+}
+
+export function useAbrirConta() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: abrirConta,
+    // Regra do projeto: toda operacao que muda conta invalida a lista.
+    // Esquecer esta linha nao quebra nada — so deixa a tela mostrando o
+    // estado anterior, que e o defeito que ninguem nota.
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: CHAVES.contas() });
+    },
   });
 }
