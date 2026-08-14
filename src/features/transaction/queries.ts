@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { buscarTransacao } from "@/features/transaction/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { buscarTransacao, depositar } from "@/features/transaction/api";
 import { CHAVES } from "@/features/account/queries";
 import { MOTIVOS_DE_FALHA } from "@/features/transaction/types";
 
@@ -28,4 +28,32 @@ export function motivoTraduzivel(motivo: string | null): string {
     );
   }
   return "UNKNOWN";
+}
+
+/**
+ * Depois de mover dinheiro, tudo que depende de conta esta velho: a lista,
+ * o saldo do detalhe, o extrato e a soma de pendentes. Invalidar so a lista
+ * deixaria o extrato mostrando o estado anterior.
+ */
+function invalidarTudoDeConta(qc: ReturnType<typeof useQueryClient>, contaId: string) {
+  void qc.invalidateQueries({ queryKey: CHAVES.contas() });
+  void qc.invalidateQueries({ queryKey: CHAVES.conta(contaId) });
+  void qc.invalidateQueries({ queryKey: CHAVES.extrato(contaId) });
+  void qc.invalidateQueries({ queryKey: CHAVES.extratoPendentes(contaId) });
+}
+
+export function useDepositar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      entrada,
+      chave,
+    }: {
+      entrada: { account_id: string; amount: string };
+      chave: string;
+    }) => depositar(entrada, chave),
+    onSuccess: (_resposta, variaveis) => {
+      invalidarTudoDeConta(qc, variaveis.entrada.account_id);
+    },
+  });
 }
