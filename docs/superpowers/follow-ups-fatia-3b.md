@@ -27,7 +27,7 @@ recarregamento não.
 Nem por período, nem por status, nem por direção. O gateway não oferece, e
 para uma conta com muitas transações a navegação vira só "carregar mais".
 
-### O e2e não exercita paginação real do extrato — FECHADO na Fatia 3c
+### O e2e não exercita paginação real do extrato — bloqueio removido na Fatia 3c, teste ainda não escrito
 
 A §9 do spec pede dois caminhos no Playwright: abrir uma conta e vê-la na
 lista, **e** "paginar o extrato de verdade". O primeiro existe

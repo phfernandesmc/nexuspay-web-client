@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { http as mswHttp, HttpResponse } from "msw";
 import { servidor, URL_TESTE } from "@/test/msw";
 import { envolverComQuery } from "@/test/queryWrapper";
@@ -28,6 +28,36 @@ function montar(estado: { criadaAgora?: boolean } | null = null) {
     <MemoryRouter initialEntries={[{ pathname: "/transacoes/tx-1", state: estado }]}>
       <Routes>
         <Route path="/transacoes/:id" element={<TransactionReceiptPage />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+/**
+ * Expoe o location.state ATUAL (nao o inicial) para o teste conferir que a
+ * limpeza aconteceu. Precisa estar na mesma rota que o recibo — um irmao
+ * dele, nao um filho — porque useLocation() le o state da entrada de
+ * historico corrente, e o teste quer ver esse valor mudar depois do mount,
+ * nao o valor capturado uma vez.
+ */
+function EspiaoDeEstado() {
+  const local = useLocation();
+  return <span data-testid="estado-state">{JSON.stringify(local.state)}</span>;
+}
+
+function montarComEspiaoDeEstado(estado: { criadaAgora?: boolean } | null) {
+  return envolverComQuery(
+    <MemoryRouter initialEntries={[{ pathname: "/transacoes/tx-1", state: estado }]}>
+      <Routes>
+        <Route
+          path="/transacoes/:id"
+          element={
+            <>
+              <TransactionReceiptPage />
+              <EspiaoDeEstado />
+            </>
+          }
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -78,6 +108,29 @@ describe("recibo", () => {
         "Este pedido já tinha sido enviado. Você está vendo a mesma transação, não uma nova.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("captura o estado da navegacao no mount e limpa a entrada do historico em seguida", async () => {
+    // Isto NAO testa o reload em si — o jsdom nunca reproduz um F5 de
+    // verdade, entao nao ha como flagrar aqui que history.state sobrevive a
+    // um recarregamento real (so o e2e contra o Chromium prova isso). O que
+    // da para testar e o MECANISMO que precisa rodar para o reload real
+    // funcionar: (1) o aviso aparece na montagem, provando que a captura do
+    // state funcionou; e (2) location.state fica null logo depois, provando
+    // que a limpeza (navigate replace) rodou. Sem as duas metades, um F5 de
+    // verdade continuaria mostrando "enviado agora" para sempre — e essa e
+    // a unica rede de seguranca disto que roda em `npm test`, sem precisar
+    // do gateway, do Postgres nem do Playwright.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () => HttpResponse.json(transacao())),
+    );
+
+    montarComEspiaoDeEstado({ criadaAgora: true });
+
+    expect(await screen.findByText("Pedido enviado agora.")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId("estado-state")).toHaveTextContent("null"),
+    );
   });
 
   it("sem estado de navegacao NAO afirma nada sobre novidade", async () => {

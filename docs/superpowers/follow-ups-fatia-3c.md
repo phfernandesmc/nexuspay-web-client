@@ -27,3 +27,14 @@ três serviços na mesma execução.
 
 Herdado da 3b, e agora também no apelido de contato: o limite existe só pelo
 atributo HTML `maxLength`, sem teste. O gateway valida do lado dele.
+
+## O teste de paginação real do extrato ainda não foi escrito
+
+Herdado da 3b (`docs/superpowers/follow-ups-fatia-3b.md`), item "O e2e não
+exercita paginação real do extrato". A 3c removeu o bloqueio que impedia
+escrevê-lo — `tests/e2e/dinheiro.spec.ts` agora gera uma transação de
+verdade via o fluxo real da UI, então o extrato passou a ter dado real para
+paginar — mas o teste em si, que navega até o extrato e clica "Carregar
+mais" contra uma segunda página de verdade, não foi escrito nesta fatia.
+Falta gerar transações suficientes (mais de uma página) para uma única
+conta e exercitar o botão contra o gateway real.
