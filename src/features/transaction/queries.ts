@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { buscarTransacao, depositar } from "@/features/transaction/api";
+import { buscarTransacao, depositar, transferir } from "@/features/transaction/api";
 import { CHAVES } from "@/features/account/queries";
 import { MOTIVOS_DE_FALHA } from "@/features/transaction/types";
 
@@ -54,6 +54,22 @@ export function useDepositar() {
     }) => depositar(entrada, chave),
     onSuccess: (_resposta, variaveis) => {
       invalidarTudoDeConta(qc, variaveis.entrada.account_id);
+    },
+  });
+}
+
+export function useTransferir() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      entrada,
+      chave,
+    }: {
+      entrada: { source_account_id: string; destination_account_id: string; amount: string };
+      chave: string;
+    }) => transferir(entrada, chave),
+    onSuccess: (_resposta, variaveis) => {
+      invalidarTudoDeConta(qc, variaveis.entrada.source_account_id);
     },
   });
 }
