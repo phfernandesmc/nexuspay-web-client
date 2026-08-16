@@ -1,22 +1,35 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useParams } from "react-router";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSalvarContato } from "@/features/contact/queries";
 import { motivoTraduzivel, useTransacao } from "@/features/transaction/queries";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 import { formatarDataHora } from "@/lib/datetime";
 import { formatarDinheiro, paraCentavos } from "@/lib/money";
 
 export default function TransactionReceiptPage() {
-  const { t, i18n } = useTranslation(["transaction", "errors"]);
+  const { t, i18n } = useTranslation(["transaction", "contact", "errors"]);
   const { id = "" } = useParams<{ id: string }>();
   const local = useLocation();
   const { data: transacao, isPending, isError, error, refetch, isFetching } = useTransacao(id);
+  const salvarContato = useSalvarContato();
+  const [salvandoContato, setSalvandoContato] = useState(false);
+  const [aliasNovo, setAliasNovo] = useState("");
+  const [erroContato, setErroContato] = useState<string | null>(null);
 
   // So existe quando o recibo foi alcancado logo depois do envio. Depois de
   // um recarregamento e undefined, e ai o recibo nao afirma nada sobre
   // novidade — dizer "enviada agora" seria mentira.
   const criadaAgora = (local.state as { criadaAgora?: boolean } | null)?.criadaAgora;
+
+  // Só existe quando o destino veio de uma busca. Transferencia para
+  // contato salvo nao tem o que salvar.
+  const destinoNaoSalvo =
+    (local.state as { destinoNaoSalvo?: string | null } | null)?.destinoNaoSalvo ?? null;
 
   if (isError) {
     return (
@@ -73,6 +86,49 @@ export default function TransactionReceiptPage() {
             {t(motivoTraduzivel(transacao.failure_reason), { ns: "errors" })}
           </AlertDescription>
         </Alert>
+      )}
+
+      {destinoNaoSalvo !== null && !salvandoContato && (
+        <Button variant="outline" onClick={() => setSalvandoContato(true)}>
+          {t("transaction:saveContact")}
+        </Button>
+      )}
+
+      {destinoNaoSalvo !== null && salvandoContato && (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="recibo-alias">{t("contact:alias")}</Label>
+          <Input
+            id="recibo-alias"
+            maxLength={50}
+            value={aliasNovo}
+            onChange={(evento) => setAliasNovo(evento.target.value)}
+          />
+          {erroContato && (
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>{erroContato}</AlertDescription>
+            </Alert>
+          )}
+          <Button
+            disabled={aliasNovo.trim() === "" || salvarContato.isPending}
+            onClick={() => {
+              setErroContato(null);
+              void salvarContato
+                .mutateAsync({
+                  account_id: destinoNaoSalvo,
+                  alias: aliasNovo.trim(),
+                  is_favorite: false,
+                })
+                .then(() => setSalvandoContato(false))
+                .catch((falha: unknown) => {
+                  setErroContato(
+                    t(codigoTraduzivel(extrairErro(falha).code), { ns: "errors" }),
+                  );
+                });
+            }}
+          >
+            {t("contact:save")}
+          </Button>
+        </div>
       )}
 
       <div className="flex gap-2">

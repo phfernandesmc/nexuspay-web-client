@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { http as mswHttp, HttpResponse } from "msw";
@@ -187,5 +187,58 @@ describe("recibo", () => {
     const valor = await screen.findByText(/150/);
     expect(valor).toHaveTextContent("R$");
     expect(valor.textContent).not.toMatch(/(?<!R)\$/);
+  });
+
+  it("oferece salvar o contato quando o destino veio de busca", async () => {
+    let corpo: unknown = null;
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () => HttpResponse.json(transacao())),
+      mswHttp.post(`${URL_TESTE}/contacts`, async ({ request }) => {
+        corpo = await request.json();
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+
+    envolverComQuery(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/transacoes/tx-1",
+            state: { criadaAgora: true, destinoNaoSalvo: "conta-nova" },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/transacoes/:id" element={<TransactionReceiptPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const usuario = userEvent.setup();
+    await usuario.click(
+      await screen.findByRole("button", { name: "Salvar destino como contato" }),
+    );
+    await usuario.type(await screen.findByLabelText("Apelido"), "Joao");
+    await usuario.click(screen.getByRole("button", { name: "Salvar contato" }));
+
+    await waitFor(() =>
+      expect(corpo).toEqual({ account_id: "conta-nova", alias: "Joao", is_favorite: false }),
+    );
+  });
+
+  it("NAO oferece salvar quando o destino ja era um contato", async () => {
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () => HttpResponse.json(transacao())),
+    );
+
+    montar({ criadaAgora: true });
+
+    // Mesmo problema de getNodeText documentado no primeiro teste deste
+    // arquivo: rotulo e valor sao irmaos de texto no mesmo <p>, entao a
+    // string exata nao bate — regex de substring resolve.
+    await screen.findByText(/Aceita, ainda não concluída/);
+    expect(
+      screen.queryByRole("button", { name: "Salvar destino como contato" }),
+    ).not.toBeInTheDocument();
   });
 });
