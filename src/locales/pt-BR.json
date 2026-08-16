@@ -5,7 +5,10 @@
     "logout": "Sair",
     "loading": "Carregando",
     "home": "Início",
-    "accounts": "Contas"
+    "accounts": "Contas",
+    "contacts": "Contatos",
+    "transfer": "Transferir",
+    "deposit": "Depositar"
   },
   "auth": {
     "login": {

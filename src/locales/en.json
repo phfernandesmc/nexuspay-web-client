@@ -5,7 +5,10 @@
     "logout": "Sign out",
     "loading": "Loading",
     "home": "Home",
-    "accounts": "Accounts"
+    "accounts": "Accounts",
+    "contacts": "Contacts",
+    "transfer": "Transfer",
+    "deposit": "Deposit"
   },
   "auth": {
     "login": {

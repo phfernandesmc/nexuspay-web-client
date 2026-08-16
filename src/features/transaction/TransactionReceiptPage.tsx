@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation, useParams } from "react-router";
-import { Button } from "@/components/ui/button";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,6 +15,7 @@ export default function TransactionReceiptPage() {
   const { t, i18n } = useTranslation(["transaction", "contact", "errors"]);
   const { id = "" } = useParams<{ id: string }>();
   const local = useLocation();
+  const navegar = useNavigate();
   const { data: transacao, isPending, isError, error, refetch, isFetching } = useTransacao(id);
   const salvarContato = useSalvarContato();
   const [salvandoContato, setSalvandoContato] = useState(false);
@@ -26,15 +27,44 @@ export default function TransactionReceiptPage() {
   // que a tela ofereceu.
   const [contatoSalvo, setContatoSalvo] = useState(false);
 
+  // O history.state do navegador NAO se perde num recarregamento — ele fica
+  // preso a entrada do historico de sessao, nao a montagem do componente
+  // (comportamento documentado da History API, nao peculiaridade de
+  // nenhuma engine). Se so lessemos local.state a cada render, um F5 real
+  // devolveria o MESMO state de quando a transacao foi criada, e o recibo
+  // diria "enviada agora" para sempre a cada recarregamento — que e
+  // exatamente a mentira que este trecho existe para evitar.
+  //
+  // A saida e ler o state uma unica vez, na primeira renderizacao (o
+  // inicializador de useState so roda no mount), e so DEPOIS trocar a
+  // entrada do historico por uma sem state (useEffect abaixo, com
+  // replace: true para nao empilhar uma entrada nova). Dali em diante,
+  // inclusive apos um reload, local.state chega null e o recibo nao afirma
+  // mais nada sobre novidade.
+  const [estadoCapturado] = useState(
+    () =>
+      local.state as {
+        criadaAgora?: boolean;
+        destinoNaoSalvo?: string | null;
+      } | null,
+  );
+
+  useEffect(() => {
+    if (local.state === null) return;
+    navegar(local.pathname, { replace: true, state: null });
+    // Roda so uma vez, no mount: e o consumo unico do state capturado acima,
+    // nao uma reacao a mudancas de local ao longo da vida do componente.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // So existe quando o recibo foi alcancado logo depois do envio. Depois de
-  // um recarregamento e undefined, e ai o recibo nao afirma nada sobre
+  // um recarregamento fica undefined, e ai o recibo nao afirma nada sobre
   // novidade — dizer "enviada agora" seria mentira.
-  const criadaAgora = (local.state as { criadaAgora?: boolean } | null)?.criadaAgora;
+  const criadaAgora = estadoCapturado?.criadaAgora;
 
   // Só existe quando o destino veio de uma busca. Transferencia para
   // contato salvo nao tem o que salvar.
-  const destinoNaoSalvo =
-    (local.state as { destinoNaoSalvo?: string | null } | null)?.destinoNaoSalvo ?? null;
+  const destinoNaoSalvo = estadoCapturado?.destinoNaoSalvo ?? null;
 
   if (isError) {
     return (
@@ -143,9 +173,20 @@ export default function TransactionReceiptPage() {
         <Button onClick={() => void refetch()} disabled={isFetching}>
           {isFetching ? t("transaction:refreshing") : t("transaction:refresh")}
         </Button>
-        <Button variant="outline" render={<Link to={`/contas/${contaDoRecibo}`} />}>
+        {/* Nao usa <Button render={<Link .../>}>: este controle NAVEGA, entao
+        precisa continuar sendo um link de verdade (role="link", nao
+        "button") para leitor de tela e Ctrl+clique/abrir em nova aba. O
+        primitivo Button do base-ui, quando nao renderiza um <button> nativo,
+        aplica role="button" por padrao (inclusive com nativeButton={false}
+        — a flag so troca QUAL aviso ele reclama, nao evita a sobrescrita de
+        role). Aplicar buttonVariants direto no Link da a mesma aparencia
+        sem essa troca de semantica. */}
+        <Link
+          to={`/contas/${contaDoRecibo}`}
+          className={buttonVariants({ variant: "outline" })}
+        >
           {t("transaction:backToStatement")}
-        </Button>
+        </Link>
       </div>
     </div>
   );
