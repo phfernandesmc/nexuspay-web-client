@@ -268,6 +268,61 @@ describe("recibo", () => {
     expect(screen.queryByLabelText("Apelido")).not.toBeInTheDocument();
   });
 
+  it("quando salvar o contato falha, o formulario e o botao continuam disponiveis", async () => {
+    // Se contatoSalvo fosse setado antes da confirmacao do servidor (versao
+    // otimista), este teste tem que acusar: a oferta sumiria mesmo com o
+    // salvamento tendo falhado, e o usuario ficaria sem formulario e sem
+    // entender por que o contato nao foi salvo.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () => HttpResponse.json(transacao())),
+      mswHttp.post(`${URL_TESTE}/contacts`, () =>
+        HttpResponse.json(
+          {
+            error: {
+              code: "CONTACT_ALREADY_EXISTS",
+              message: "mensagem crua do servidor, nunca deveria aparecer",
+              details: {},
+            },
+          },
+          { status: 409 },
+        ),
+      ),
+    );
+
+    envolverComQuery(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/transacoes/tx-1",
+            state: { criadaAgora: true, destinoNaoSalvo: "conta-nova" },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/transacoes/:id" element={<TransactionReceiptPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const usuario = userEvent.setup();
+    await usuario.click(
+      await screen.findByRole("button", { name: "Salvar destino como contato" }),
+    );
+    await usuario.type(await screen.findByLabelText("Apelido"), "Joao");
+    await usuario.click(screen.getByRole("button", { name: "Salvar contato" }));
+
+    // 1. Alerta traduzido POR CODIGO, nunca com a mensagem do servidor.
+    const alerta = await screen.findByRole("alert");
+    expect(alerta).toHaveTextContent(i18n.t("CONTACT_ALREADY_EXISTS", { ns: "errors" }));
+    expect(alerta).not.toHaveTextContent("mensagem crua do servidor");
+
+    // 2. O formulario continua na tela — o usuario precisa poder tentar de novo.
+    expect(screen.getByLabelText("Apelido")).toBeInTheDocument();
+
+    // 3. O botao de salvar nao sumiu.
+    expect(screen.getByRole("button", { name: "Salvar contato" })).toBeInTheDocument();
+  });
+
   it("comprovante de DEPOSIT nao oferece salvar contato", async () => {
     // Hoje isso e seguro por construcao — DepositPage nunca poe
     // destinoNaoSalvo no estado da navegacao — mas nada do lado do recibo
