@@ -69,7 +69,11 @@ export function useTransferir() {
       chave: string;
     }) => transferir(entrada, chave),
     onSuccess: (_resposta, variaveis) => {
+      // Os dois lados podem ser contas do mesmo usuario: quem so invalidasse
+      // a origem deixaria o saldo em cache de quem RECEBEU parado no valor
+      // antigo.
       invalidarTudoDeConta(qc, variaveis.entrada.source_account_id);
+      invalidarTudoDeConta(qc, variaveis.entrada.destination_account_id);
     },
   });
 }

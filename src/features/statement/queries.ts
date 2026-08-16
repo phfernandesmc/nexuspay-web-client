@@ -39,6 +39,10 @@ export function usePendentesDeSaida(contaId: string) {
   const consulta = useQuery({
     queryKey: CHAVES.extratoPendentes(contaId),
     queryFn: () => buscarExtrato(contaId, null, LIMITE_MAXIMO),
+    // Sem guarda, quem ainda nao escolheu conta (contaId === "") dispara
+    // GET /accounts//statement?limit=100 a cada render — chamada malformada
+    // que nunca teria uma conta valida do outro lado.
+    enabled: contaId !== "",
   });
 
   const centavos = somarCentavos(

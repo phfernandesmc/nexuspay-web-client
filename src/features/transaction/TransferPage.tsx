@@ -44,8 +44,14 @@ export default function TransferPage() {
 
   const origem = (contas ?? []).find((c) => c.id === origemId);
   const pendentes = usePendentesDeSaida(origemId);
+  // Mesma regra de PendingBalanceLine.tsx: enquanto a consulta de pendentes
+  // carrega, ou se ela falhar, "disponivel = saldo - 0" mostraria o saldo
+  // CHEIO como se estivesse confirmado. Sem disponivel confiavel, nao ha
+  // "disponivel" para mostrar nem "acima do disponivel" para avisar.
   const disponivelCentavos =
-    origem === undefined ? null : paraCentavos(origem.balance) - pendentes.centavos;
+    origem === undefined || pendentes.isPending || pendentes.isError
+      ? null
+      : paraCentavos(origem.balance) - pendentes.centavos;
   const valorCentavos = (() => {
     try {
       return valor.trim() === "" ? null : paraCentavos(valor.trim());
@@ -103,6 +109,14 @@ export default function TransferPage() {
         <p className="text-sm text-muted-foreground">
           {t("transaction:available")}: {formatarDinheiro(disponivelCentavos, i18n.language)}
         </p>
+      )}
+
+      {pendentes.isError && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>
+            {t(codigoTraduzivel(extrairErro(pendentes.error).code), { ns: "errors" })}
+          </AlertDescription>
+        </Alert>
       )}
 
       {achada === null ? (

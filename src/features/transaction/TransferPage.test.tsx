@@ -2,10 +2,11 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
-import { http as mswHttp, HttpResponse } from "msw";
+import { http as mswHttp, HttpResponse, delay } from "msw";
 import { servidor, URL_TESTE } from "@/test/msw";
 import { envolverComQuery } from "@/test/queryWrapper";
 import { useSession } from "@/features/auth/session.store";
+import { useConta } from "@/features/account/queries";
 import TransferPage from "@/features/transaction/TransferPage";
 import i18n from "@/app/i18n";
 
@@ -39,9 +40,35 @@ const contato = {
   created_at: "2026-03-01T10:00:00Z",
 };
 
+/** A mesma conta-maria do contato acima, mas como o gateway a devolve em GET /accounts/:id. */
+const contaMaria = {
+  id: "conta-maria",
+  branch: "0002",
+  number: "87654321",
+  alias: "Da Maria",
+  type: "CHECKING",
+  balance: "10.00",
+  status: "ACTIVE",
+  institution: instituicao,
+  created_at: "2026-03-01T10:00:00Z",
+};
+
 function Espiao() {
   const local = useLocation();
   return <span data-testid="rota">{local.pathname}</span>;
+}
+
+/**
+ * Mantem CHAVES.conta(id) com observador ativo durante o teste todo, mesmo
+ * depois que a transferencia navega para longe da TransferPage.
+ * invalidateQueries so refaz consulta com observador ativo (o "active" do
+ * refetchType default); sem este componente paralelo, uma corrida entre a
+ * navegacao e a invalidacao deixaria o teste instavel em vez de provar a
+ * invalidacao de fato. Mesmo padrao de ListaObservada em DepositPage.test.tsx.
+ */
+function DestinoObservado({ id }: { id: string }) {
+  useConta(id);
+  return null;
 }
 
 function montar() {
@@ -269,5 +296,83 @@ describe("transferencia", () => {
 
     await waitFor(() => expect(chaves).toHaveLength(2));
     expect(chaves[0]).toBe(chaves[1]);
+  });
+
+  it("enquanto os pendentes carregam, nao mostra disponivel nenhum", async () => {
+    // Mostrar "disponivel = saldo - 0" enquanto a consulta ainda esta em voo
+    // afirmaria um numero que pode mudar assim que ela responder. O handler
+    // aqui nunca resolve (delay("infinite")), entao o estado PENDING e
+    // garantido durante todo o teste — nao e uma corrida de timing.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts/${conta.id}/statement`, async () => {
+        await delay("infinite");
+        return HttpResponse.json({ items: [], next_cursor: null });
+      }),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+
+    expect(screen.queryByText(/Disponível/)).not.toBeInTheDocument();
+  });
+
+  it("erro ao carregar pendentes esconde o disponivel e mostra o alerta traduzido", async () => {
+    // Reproduz o defeito que a review da Fatia 3b ja corrigiu em
+    // PendingBalanceLine.tsx (commit 4c3ff48): sem tratar isError, a falha de
+    // rede caia no mesmo `?? []` do "sem pendencias" e a tela afirmava que o
+    // saldo CHEIO estava disponivel quando ninguem sabia.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts/${conta.id}/statement`, () => HttpResponse.error()),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não conseguimos falar com o servidor. Verifique sua conexão.",
+    );
+    // A segunda metade da prova: sem o alerta, o disponivel nao pode
+    // aparecer disfarcado de "esta tudo disponivel".
+    expect(screen.queryByText(/Disponível/)).not.toBeInTheDocument();
+  });
+
+  it("transferencia bem sucedida REFAZ o saldo em cache da conta de destino", async () => {
+    // Este e o teste que pega o defeito silencioso: sem invalidar tambem o
+    // destination_account_id, duas contas do MESMO usuario ficam
+    // dessincronizadas — quem enviou ve o saldo novo, quem recebeu continua
+    // com o saldo velho em cache ate a proxima montagem.
+    let buscasDestino = 0;
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts/${contaMaria.id}`, () => {
+        buscasDestino += 1;
+        return HttpResponse.json(contaMaria);
+      }),
+      mswHttp.post(`${URL_TESTE}/transactions/transfer`, () => respostaTransacao(202)),
+    );
+
+    envolverComQuery(
+      <>
+        <DestinoObservado id={contaMaria.id} />
+        <MemoryRouter initialEntries={["/transferir"]}>
+          <Routes>
+            <Route path="/transferir" element={<TransferPage />} />
+            <Route path="/transacoes/:id" element={<Espiao />} />
+          </Routes>
+        </MemoryRouter>
+      </>,
+    );
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    await waitFor(() => expect(buscasDestino).toBeGreaterThanOrEqual(1));
+    const antes = buscasDestino;
+
+    await screen.findByRole("option", { name: /Maria/ });
+    await usuario.selectOptions(screen.getByLabelText("Destino"), contato.id);
+    await usuario.type(screen.getByLabelText("Valor"), "100.00");
+    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+
+    await waitFor(() => expect(buscasDestino).toBeGreaterThan(antes));
   });
 });
