@@ -218,12 +218,78 @@ describe("recibo", () => {
     await usuario.click(
       await screen.findByRole("button", { name: "Salvar destino como contato" }),
     );
-    await usuario.type(await screen.findByLabelText("Apelido"), "Joao");
+    // Espacos nas pontas provam o .trim() do lado da producao: se ele
+    // sumisse, o corpo chegaria com "  Joao  " e a asserção abaixo falharia.
+    await usuario.type(await screen.findByLabelText("Apelido"), "  Joao  ");
     await usuario.click(screen.getByRole("button", { name: "Salvar contato" }));
 
     await waitFor(() =>
       expect(corpo).toEqual({ account_id: "conta-nova", alias: "Joao", is_favorite: false }),
     );
+  });
+
+  it("a oferta some depois de salvar o contato com sucesso", async () => {
+    // Sem limpar o estado depois do sucesso, o botao e o formulario
+    // voltariam a aparecer com o mesmo destino ja salvo, e um segundo envio
+    // bateria em CONTACT_ALREADY_EXISTS por fazer exatamente o que a tela
+    // ofereceu.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () => HttpResponse.json(transacao())),
+      mswHttp.post(`${URL_TESTE}/contacts`, () => HttpResponse.json({}, { status: 201 })),
+    );
+
+    envolverComQuery(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/transacoes/tx-1",
+            state: { criadaAgora: true, destinoNaoSalvo: "conta-nova" },
+          },
+        ]}
+      >
+        <Routes>
+          <Route path="/transacoes/:id" element={<TransactionReceiptPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const usuario = userEvent.setup();
+    await usuario.click(
+      await screen.findByRole("button", { name: "Salvar destino como contato" }),
+    );
+    await usuario.type(await screen.findByLabelText("Apelido"), "Joao");
+    await usuario.click(screen.getByRole("button", { name: "Salvar contato" }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Salvar destino como contato" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByLabelText("Apelido")).not.toBeInTheDocument();
+  });
+
+  it("comprovante de DEPOSIT nao oferece salvar contato", async () => {
+    // Hoje isso e seguro por construcao — DepositPage nunca poe
+    // destinoNaoSalvo no estado da navegacao — mas nada do lado do recibo
+    // afirmava isso ate este teste existir.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () =>
+        HttpResponse.json(
+          transacao({
+            type: "DEPOSIT",
+            source_account_id: null,
+            destination_account_id: "conta-que-recebeu",
+          }),
+        ),
+      ),
+    );
+
+    montar({ criadaAgora: true });
+
+    await screen.findByText("Pedido enviado agora.");
+    expect(
+      screen.queryByRole("button", { name: "Salvar destino como contato" }),
+    ).not.toBeInTheDocument();
   });
 
   it("NAO oferece salvar quando o destino ja era um contato", async () => {

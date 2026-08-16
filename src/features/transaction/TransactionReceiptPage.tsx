@@ -20,6 +20,11 @@ export default function TransactionReceiptPage() {
   const [salvandoContato, setSalvandoContato] = useState(false);
   const [aliasNovo, setAliasNovo] = useState("");
   const [erroContato, setErroContato] = useState<string | null>(null);
+  // So vira true depois que o servidor confirma. Sem isso o botao e o
+  // formulario voltariam a aparecer com o mesmo destino ja salvo, e um
+  // segundo envio bateria em CONTACT_ALREADY_EXISTS por fazer exatamente o
+  // que a tela ofereceu.
+  const [contatoSalvo, setContatoSalvo] = useState(false);
 
   // So existe quando o recibo foi alcancado logo depois do envio. Depois de
   // um recarregamento e undefined, e ai o recibo nao afirma nada sobre
@@ -88,13 +93,13 @@ export default function TransactionReceiptPage() {
         </Alert>
       )}
 
-      {destinoNaoSalvo !== null && !salvandoContato && (
+      {destinoNaoSalvo !== null && !contatoSalvo && !salvandoContato && (
         <Button variant="outline" onClick={() => setSalvandoContato(true)}>
           {t("transaction:saveContact")}
         </Button>
       )}
 
-      {destinoNaoSalvo !== null && salvandoContato && (
+      {destinoNaoSalvo !== null && !contatoSalvo && salvandoContato && (
         <div className="flex flex-col gap-2">
           <Label htmlFor="recibo-alias">{t("contact:alias")}</Label>
           <Input
@@ -118,7 +123,10 @@ export default function TransactionReceiptPage() {
                   alias: aliasNovo.trim(),
                   is_favorite: false,
                 })
-                .then(() => setSalvandoContato(false))
+                .then(() => {
+                  setSalvandoContato(false);
+                  setContatoSalvo(true);
+                })
                 .catch((falha: unknown) => {
                   setErroContato(
                     t(codigoTraduzivel(extrairErro(falha).code), { ns: "errors" }),
