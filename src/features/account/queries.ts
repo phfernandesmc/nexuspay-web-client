@@ -21,6 +21,8 @@ export const CHAVES = {
   extrato: (contaId: string) => ["extrato", contaId] as const,
   extratoPendentes: (contaId: string) => ["extrato-pendentes", contaId] as const,
   instituicoes: () => ["instituicoes"] as const,
+  contatos: () => ["contatos"] as const,
+  transacao: (id: string) => ["transacao", id] as const,
 };
 
 export function useContas() {

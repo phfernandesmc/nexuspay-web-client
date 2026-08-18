@@ -60,6 +60,15 @@ As chaves de cache das contas ficam todas em um lugar só,
 delas casarem exatamente — uma chave escrita à mão fora dali não invalida
 nada, e o sintoma é um saldo velho que só some ao recarregar a página.
 
+Transferência e depósito exigem o cabeçalho `Idempotency-Key`. A chave é
+gerada por intenção — muda quando muda a conta de origem, o destino ou o
+valor — e presa ao payload que ela representa; ela **não é persistida**, e
+por isso morre junto com o formulário. O comprovante em `/transacoes/:id` é
+quem responde "passou?" depois de um recarregamento: ele busca a transação
+de novo pelo id, não depende de nenhum estado de navegação, e é o único
+lugar em que a resposta continua confiável se a chave de idempotência já
+tiver sumido.
+
 ## Erros
 
 Traduzidos por `error.code`, nunca por `error.message`. O catálogo vive em

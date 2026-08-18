@@ -8,6 +8,10 @@ import HomePage from "@/pages/HomePage";
 import AppShell from "@/components/layout/AppShell";
 import AccountsPage from "@/features/account/AccountsPage";
 import AccountDetailPage from "@/features/account/AccountDetailPage";
+import ContactsPage from "@/features/contact/ContactsPage";
+import DepositPage from "@/features/transaction/DepositPage";
+import TransactionReceiptPage from "@/features/transaction/TransactionReceiptPage";
+import TransferPage from "@/features/transaction/TransferPage";
 
 function TelaDeCarga() {
   const { t } = useTranslation("common");
@@ -65,6 +69,54 @@ export default function Router() {
             autenticado ? (
               <AppShell>
                 <AccountDetailPage />
+              </AppShell>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/contatos"
+          element={
+            autenticado ? (
+              <AppShell>
+                <ContactsPage />
+              </AppShell>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/transferir"
+          element={
+            autenticado ? (
+              <AppShell>
+                <TransferPage />
+              </AppShell>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/depositar"
+          element={
+            autenticado ? (
+              <AppShell>
+                <DepositPage />
+              </AppShell>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/transacoes/:id"
+          element={
+            autenticado ? (
+              <AppShell>
+                <TransactionReceiptPage />
               </AppShell>
             ) : (
               <Navigate to="/login" replace />

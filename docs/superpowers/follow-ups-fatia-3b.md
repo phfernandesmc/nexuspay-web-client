@@ -27,28 +27,30 @@ recarregamento não.
 Nem por período, nem por status, nem por direção. O gateway não oferece, e
 para uma conta com muitas transações a navegação vira só "carregar mais".
 
-### O e2e não exercita paginação real do extrato
+### O e2e não exercita paginação real do extrato — bloqueio removido na Fatia 3c, teste ainda não escrito
 
 A §9 do spec pede dois caminhos no Playwright: abrir uma conta e vê-la na
 lista, **e** "paginar o extrato de verdade". O primeiro existe
 (`tests/e2e/contas.spec.ts`, "abrir uma conta e ve-la na lista"). O segundo
-não: o teste que existe hoje, "conta nova tem extrato vazio", só prova o
-estado inicial sem transações — nunca gera uma segunda página nem exercita
-"Carregar mais" contra o servidor real.
+não existia: o teste que havia até então, "conta nova tem extrato vazio", só
+provava o estado inicial sem transações — nunca gerava uma segunda página
+nem exercitava "Carregar mais" contra o servidor real.
 
-Gerar a transação necessária para isso exige um depósito ou uma
-transferência, e os dois são da Fatia 3c — não existem ainda nesta fatia.
+Gerar a transação necessária para isso exigia um depósito ou uma
+transferência, e os dois eram da Fatia 3c — não existiam ainda nesta fatia.
 Além disso, mesmo que existissem, alimentar o worker que processa essas
 transações passa pela fila SQS `api-processar-transferencia-worker.fifo`,
 que é compartilhada entre desenvolvimento e produção; um teste automatizado
 não pode publicar nela só para gerar dados de fixture.
 
-É dívida legítima, não defeito: a 3b não tem como criar uma transação sem
-tocar numa fila que não é dela. **A Fatia 3c fecha isso** assim que tiver um
-caminho de depósito ou transferência disponível de ponta a ponta: gerar
-transações suficientes para uma segunda página (via o fluxo real da UI, não
-a fila diretamente), navegar até o extrato e exercitar "Carregar mais"
-contra o gateway de verdade.
+**Bloqueio removido na Fatia 3c, teste ainda não escrito**: `tests/e2e/dinheiro.spec.ts`
+criou o caminho de depósito (e, com esta onda de correções, o de
+transferência) de ponta a ponta que faltava, gerando transações de verdade
+via o fluxo real da UI contra o gateway real. Isso remove o bloqueio
+descrito acima — a 3b não tinha como criar uma transação sem tocar numa fila
+que não era dela, e agora existe. O teste de "Carregar mais" em si, clicando
+o botão contra uma segunda página de verdade, não foi escrito nesta fatia;
+ele fica como trabalho futuro trivial agora que a fonte da transação existe.
 
 ### O ciclo completo de encerrar conta agora tem teste encadeado
 

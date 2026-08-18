@@ -49,8 +49,8 @@ describe("catalogo de erro", () => {
     expect(CODIGOS_DE_ERRO).toContain("INTERNAL_ERROR");
   });
 
-  it("tem 27 codigos", () => {
-    expect(CODIGOS_DE_ERRO).toHaveLength(27);
+  it("tem 29 codigos", () => {
+    expect(CODIGOS_DE_ERRO).toHaveLength(29);
   });
 });
 

@@ -162,7 +162,7 @@ describe("roteamento", () => {
   });
 });
 
-describe("rotas de conta", () => {
+describe("rotas de conta e dinheiro", () => {
   // Estas duas rotas consomem react-query (useContas/useConta), que o
   // App sozinho nao provisiona — em producao quem envolve e main.tsx. Sem
   // este provider aqui, montar cai no erro "No QueryClient set".
@@ -207,5 +207,39 @@ describe("rotas de conta", () => {
     montarAutenticado();
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Conta não encontrada.");
+  });
+
+  it("a rota /transferir monta a tela de transferencia", async () => {
+    window.history.pushState({}, "", "/transferir");
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([])),
+      mswHttp.get(`${URL_TESTE}/contacts`, () => HttpResponse.json([])),
+    );
+
+    montarAutenticado();
+
+    expect(await screen.findByRole("heading", { name: "Transferir" })).toBeInTheDocument();
+  });
+
+  it("a rota /transacoes/:id monta o comprovante", async () => {
+    window.history.pushState({}, "", "/transacoes/tx-1");
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () =>
+        HttpResponse.json({
+          id: "tx-1",
+          type: "TRANSFER",
+          status: "COMPLETED",
+          amount: "10.00",
+          source_account_id: "conta-1",
+          destination_account_id: "conta-2",
+          failure_reason: null,
+          created_at: "2026-03-09T14:30:00Z",
+        }),
+      ),
+    );
+
+    montarAutenticado();
+
+    expect(await screen.findByRole("heading", { name: "Comprovante" })).toBeInTheDocument();
   });
 });
