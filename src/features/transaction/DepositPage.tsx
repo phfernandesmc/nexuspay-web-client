@@ -13,7 +13,7 @@ import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 export default function DepositPage() {
   const { t } = useTranslation(["transaction", "errors"]);
   const navegar = useNavigate();
-  const { data: contas } = useContas();
+  const { data: contas, isError: contasComErro, error: erroContas } = useContas();
   const depositar = useDepositar();
   const [contaId, setContaId] = useState("");
   const [valor, setValor] = useState("");
@@ -21,7 +21,10 @@ export default function DepositPage() {
 
   // A chave morre e renasce junto com a intencao: mudar a conta ou o valor
   // torna isto outro pedido, e o gateway precisa saber disso.
-  const { chave, limparChave } = useChaveDeIntencao({ account_id: contaId, amount: valor });
+  const { chave, limparChave } = useChaveDeIntencao({
+    account_id: contaId,
+    amount: valor.trim(),
+  });
 
   async function aoEnviar() {
     setErro(null);
@@ -38,6 +41,19 @@ export default function DepositPage() {
   }
 
   const incompleto = contaId === "" || valor.trim() === "";
+
+  // A falha de rede nao pode se disfarcar de "voce nao tem contas": as duas
+  // renderizariam o mesmo select vazio, e depositar e a UNICA forma de por
+  // dinheiro numa conta. Mesmo padrao de AccountsPage.tsx.
+  if (contasComErro) {
+    return (
+      <Alert variant="destructive" role="alert">
+        <AlertDescription>
+          {t(codigoTraduzivel(extrairErro(erroContas).code), { ns: "errors" })}
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">

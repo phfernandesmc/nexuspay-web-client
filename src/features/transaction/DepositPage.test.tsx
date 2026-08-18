@@ -137,6 +137,77 @@ describe("deposito", () => {
     expect(await screen.findByTestId("criada")).toHaveTextContent("true");
   });
 
+  it("erro ao carregar contas mostra o alerta traduzido em vez de select vazio silencioso", async () => {
+    // Com GET /accounts em 500, a tela antes renderizava o formulario com
+    // select vazio e ZERO alertas — afirmando por omissao que o usuario nao
+    // tem contas. Deposito e a UNICA forma de por dinheiro numa conta. Mesmo
+    // padrao de AccountsPage.tsx.
+    servidor.use(mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.error()));
+
+    montar();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não conseguimos falar com o servidor. Verifique sua conexão.",
+    );
+    expect(screen.queryByLabelText("Conta")).not.toBeInTheDocument();
+  });
+
+  it("mudar SO o valor gera uma chave de idempotencia NOVA", async () => {
+    // Criterio 15 do spec: a chave precisa estar presa ao valor. Sem isso,
+    // um reenvio depois de trocar so o valor reusaria a chave e o gateway
+    // devolveria a transacao ANTIGA em vez de criar a nova.
+    const chaves: string[] = [];
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/transactions/deposit`, ({ request }) => {
+        chaves.push(request.headers.get("Idempotency-Key") ?? "");
+        return HttpResponse.error();
+      }),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await screen.findByRole("option", { name: /Principal/ });
+    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
+    await usuario.type(screen.getByLabelText("Valor"), "100.00");
+    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await screen.findByRole("alert");
+
+    await usuario.clear(screen.getByLabelText("Valor"));
+    await usuario.type(screen.getByLabelText("Valor"), "200.00");
+    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+
+    await waitFor(() => expect(chaves).toHaveLength(2));
+    expect(chaves[0]).not.toBe(chaves[1]);
+  });
+
+  it("espaco em branco no fim do valor NAO muda a chave de idempotencia", async () => {
+    // Mesma estrutura da TransferPage: a assinatura precisa usar o MESMO
+    // valor aparado que vai na requisicao. Sem isso, editar so espaco
+    // geraria chave nova para um payload identico, e um reenvio depois de
+    // falha de rede criaria um SEGUNDO deposito.
+    const chaves: string[] = [];
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/transactions/deposit`, ({ request }) => {
+        chaves.push(request.headers.get("Idempotency-Key") ?? "");
+        return HttpResponse.error();
+      }),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await screen.findByRole("option", { name: /Principal/ });
+    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
+    await usuario.type(screen.getByLabelText("Valor"), "100.00");
+    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await screen.findByRole("alert");
+
+    await usuario.type(screen.getByLabelText("Valor"), " ");
+    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+
+    await waitFor(() => expect(chaves).toHaveLength(2));
+    expect(chaves[0]).toBe(chaves[1]);
+  });
+
   it("o 200 chega ao recibo como criadaAgora false", async () => {
     // O gateway responde 200 quando a chave ja tinha sido usada. A tela
     // precisa saber, senao diz que enviou algo que nao enviou.

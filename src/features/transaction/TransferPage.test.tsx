@@ -55,7 +55,13 @@ const contaMaria = {
 
 function Espiao() {
   const local = useLocation();
-  return <span data-testid="rota">{local.pathname}</span>;
+  const estado = local.state as { destinoNaoSalvo?: string | null } | null;
+  return (
+    <div>
+      <span data-testid="rota">{local.pathname}</span>
+      <span data-testid="destino-nao-salvo">{String(estado?.destinoNaoSalvo)}</span>
+    </div>
+  );
 }
 
 /**
@@ -195,6 +201,13 @@ describe("transferencia", () => {
     );
     // Transferir nao cria contato. O gateway nem liga um ao outro.
     expect(salvouContato).toBe(false);
+    // Criterio 8 do spec: a tela precisa de fato por destinoNaoSalvo no
+    // estado da navegacao para o recibo poder oferecer "salvar contato".
+    // TransactionReceiptPage.test.tsx so prova o que o RECIBO faz com o
+    // estado — ele monta a rota ja com { destinoNaoSalvo: "conta-nova" } no
+    // MemoryRouter, sem passar pela TransferPage. Esta e a unica prova de
+    // que a TELA REAL preenche esse campo.
+    expect(await screen.findByTestId("destino-nao-salvo")).toHaveTextContent("conta-nova");
   });
 
   it("valor acima do disponivel avisa mas NAO desabilita o botao", async () => {
@@ -292,6 +305,107 @@ describe("transferencia", () => {
 
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
     await screen.findByRole("alert");
+    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+
+    await waitFor(() => expect(chaves).toHaveLength(2));
+    expect(chaves[0]).toBe(chaves[1]);
+  });
+
+  it("erro ao carregar contas mostra o alerta traduzido e nao afirma 'sem contas' em silencio", async () => {
+    // Com GET /accounts em 500, a tela antes renderizava o select vazio
+    // sem alerta nenhum — afirmando por omissao que o usuario nao tem
+    // contas. Mesmo padrao de AccountsPage.tsx e DepositPage.tsx.
+    servidor.use(mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.error()));
+
+    montar();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não conseguimos falar com o servidor. Verifique sua conexão.",
+    );
+    expect(screen.queryByLabelText("Conta de origem")).not.toBeInTheDocument();
+  });
+
+  it("erro ao carregar contatos mostra o alerta traduzido, sem bloquear o resto da tela", async () => {
+    // Diferente de useContas, useContatos nao e essencial: "Buscar outra
+    // conta" continua funcionando sem a lista de contatos salvos. Por isso o
+    // alerta e inline, nao um bloqueio de pagina inteira.
+    servidor.use(mswHttp.get(`${URL_TESTE}/contacts`, () => HttpResponse.error()));
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não conseguimos falar com o servidor. Verifique sua conexão.",
+    );
+    // A tela continua utilizavel: a origem foi escolhida e o botao de busca
+    // na hora ainda esta la.
+    expect(screen.getByRole("button", { name: "Buscar outra conta" })).toBeInTheDocument();
+  });
+
+  it("mudar SO o valor gera uma chave de idempotencia NOVA", async () => {
+    // O criterio 15 do spec: a chave precisa estar presa ao valor. O
+    // revisor desamarrou amount do payload na tela e a suite inteira ficou
+    // verde — a unica prova viva era um teste de hook que nao passa pelo
+    // formulario. Este teste falha nesse cenario porque manda o pedido pela
+    // TELA de verdade, com um valor diferente entre os dois envios.
+    const chaves: string[] = [];
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/transactions/transfer`, ({ request }) => {
+        chaves.push(request.headers.get("Idempotency-Key") ?? "");
+        // Sempre falha: mantem a tela montada para o segundo envio, com o
+        // MESMO formulario que gerou o primeiro.
+        return HttpResponse.error();
+      }),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    await screen.findByRole("option", { name: /Maria/ });
+    await usuario.selectOptions(screen.getByLabelText("Destino"), contato.id);
+    await usuario.type(screen.getByLabelText("Valor"), "100.00");
+    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await screen.findByRole("alert");
+
+    await usuario.clear(screen.getByLabelText("Valor"));
+    await usuario.type(screen.getByLabelText("Valor"), "200.00");
+    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+
+    await waitFor(() => expect(chaves).toHaveLength(2));
+    expect(chaves[0]).not.toBe(chaves[1]);
+  });
+
+  it("espaco em branco no fim do valor NAO muda a chave de idempotencia", async () => {
+    // A assinatura usava `valor` cru, mas o pedido manda `valor.trim()`.
+    // Editar so espaco — "100.00 " vira "100.00" — gerava chave NOVA para
+    // um payload identico. Um reenvio depois de falha de rede criaria uma
+    // SEGUNDA transferencia: o furo que duplica dinheiro, nao o que devolve
+    // 409.
+    const chaves: string[] = [];
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/transactions/transfer`, ({ request }) => {
+        chaves.push(request.headers.get("Idempotency-Key") ?? "");
+        return HttpResponse.error();
+      }),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    await screen.findByRole("option", { name: /Maria/ });
+    await usuario.selectOptions(screen.getByLabelText("Destino"), contato.id);
+    await usuario.type(screen.getByLabelText("Valor"), "100.00");
+    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await screen.findByRole("alert");
+
+    // So ACRESCENTA o espaco no fim, sem apagar nada: o valor aparado
+    // ("100.00") e identico antes e depois. Limpar o campo para redigitar
+    // regeraria a chave por causa dos estados INTERMEDIARIOS (o hook gera
+    // uma chave nova a cada mudanca de assinatura, mesmo que ela volte a
+    // coincidir por acaso depois) — o que provaria outra coisa, nao a
+    // estabilidade da chave.
+    await usuario.type(screen.getByLabelText("Valor"), " ");
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
 
     await waitFor(() => expect(chaves).toHaveLength(2));

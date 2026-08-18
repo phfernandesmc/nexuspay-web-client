@@ -18,8 +18,8 @@ import { formatarDinheiro, paraCentavos } from "@/lib/money";
 export default function TransferPage() {
   const { t, i18n } = useTranslation(["transaction", "contact", "errors"]);
   const navegar = useNavigate();
-  const { data: contas } = useContas();
-  const { data: contatos } = useContatos();
+  const { data: contas, isError: contasComErro, error: erroContas } = useContas();
+  const { data: contatos, isError: contatosComErro, error: erroContatos } = useContatos();
   const transferir = useTransferir();
 
   const [origemId, setOrigemId] = useState("");
@@ -36,10 +36,13 @@ export default function TransferPage() {
     (contatos ?? []).find((c) => c.id === contatoId)?.target_account.id ??
     "";
 
+  // A assinatura usa o MESMO valor que vai na requisicao (valor.trim()).
+  // Editar so espaco em branco geraria chave nova para um payload identico,
+  // e um reenvio depois de falha de rede criaria uma SEGUNDA transferencia.
   const { chave, limparChave } = useChaveDeIntencao({
     source_account_id: origemId,
     destination_account_id: destinoId,
-    amount: valor,
+    amount: valor.trim(),
   });
 
   const origem = (contas ?? []).find((c) => c.id === origemId);
@@ -83,6 +86,20 @@ export default function TransferPage() {
   }
 
   const incompleto = origemId === "" || destinoId === "" || valor.trim() === "";
+
+  // A falha de rede nao pode se disfarcar de "voce nao tem contas": o select
+  // vazio e "voce nao tem contas" renderizam identico, e sem uma conta de
+  // origem nao ha nada que esta tela possa fazer. Mesmo padrao de
+  // AccountsPage.tsx e DepositPage.tsx.
+  if (contasComErro) {
+    return (
+      <Alert variant="destructive" role="alert">
+        <AlertDescription>
+          {t(codigoTraduzivel(extrairErro(erroContas).code), { ns: "errors" })}
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -135,6 +152,18 @@ export default function TransferPage() {
               </option>
             ))}
           </select>
+          {/* A falha de rede nao pode se disfarcar de "voce nao tem contatos":
+              o select vazio ficaria identico ao "sem contatos salvos ainda".
+              "Buscar outra conta" continua funcionando sem esta lista, entao
+              o alerta e inline em vez de bloquear a tela inteira — mesmo
+              padrao de PendingBalanceLine.tsx. */}
+          {contatosComErro && (
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>
+                {t(codigoTraduzivel(extrairErro(erroContatos).code), { ns: "errors" })}
+              </AlertDescription>
+            </Alert>
+          )}
           <Button variant="outline" onClick={() => setBuscando(true)}>
             {t("transaction:newAccount")}
           </Button>
