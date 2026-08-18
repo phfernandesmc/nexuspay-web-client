@@ -17,6 +17,7 @@ const conta = {
   alias: "Principal",
   type: "CHECKING",
   balance: "500.00",
+  pending_outgoing: "0.00",
   status: "ACTIVE",
   institution: {
     id: "inst-1",

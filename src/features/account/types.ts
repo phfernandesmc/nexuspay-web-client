@@ -16,6 +16,8 @@ export type Conta = {
   type: TipoConta;
   /** Decimal do Pydantic: string ou numero. Use paraCentavos de @/lib/money. */
   balance: string | number;
+  /** Soma crua das saidas PENDING. O disponivel e balance menos este numero. */
+  pending_outgoing: string | number;
   status: StatusConta;
   institution: Instituicao;
   created_at: string;

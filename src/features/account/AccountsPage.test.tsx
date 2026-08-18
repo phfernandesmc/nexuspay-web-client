@@ -22,6 +22,7 @@ const conta = {
   alias: "Salario",
   type: "CHECKING" as const,
   balance: "1234.56",
+  pending_outgoing: "0.00",
   status: "ACTIVE" as const,
   institution: instituicao,
   created_at: "2026-03-09T14:30:00Z",

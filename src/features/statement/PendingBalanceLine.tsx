@@ -1,35 +1,26 @@
 import { useTranslation } from "react-i18next";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatarDinheiro, paraCentavos } from "@/lib/money";
-import { codigoTraduzivel, extrairErro } from "@/lib/errors";
-import { usePendentesDeSaida } from "@/features/statement/queries";
 
+/**
+ * O processando e o disponivel, a partir dos dois numeros que ja vieram com
+ * a conta.
+ *
+ * Ate a Fatia 3c isto fazia consulta propria ao extrato com limit=100 e
+ * derivava a soma no cliente — com o furo declarado na secao 6 do spec da
+ * 3b: uma pendencia antiga empurrada para alem das 100 primeiras fazia o
+ * disponivel exibido ficar MAIOR que o real. O gateway passou a expor a
+ * soma, entao nao ha mais consulta, nem carregamento, nem erro proprio.
+ */
 export default function PendingBalanceLine({
-  contaId,
   saldo,
+  pendente,
 }: {
-  contaId: string;
   saldo: string | number;
+  pendente: string | number;
 }) {
-  const { t, i18n } = useTranslation(["statement", "errors"]);
-  const { centavos, isPending, isError, error } = usePendentesDeSaida(contaId);
+  const { t, i18n } = useTranslation(["statement"]);
   const locale = i18n.resolvedLanguage ?? "pt-BR";
-
-  if (isPending) return null;
-
-  // A falha de rede nao pode se disfarcar de "sem pendencias": as duas
-  // renderizavam o mesmo marcador vazio, e a tela afirmava silenciosamente
-  // que o saldo cheio estava disponivel quando ninguem sabia. Mesmo padrao
-  // de AccountsPage.tsx, AccountDetailPage.tsx e StatementList.tsx.
-  if (isError) {
-    return (
-      <Alert variant="destructive" role="alert">
-        <AlertDescription>
-          {t(codigoTraduzivel(extrairErro(error).code), { ns: "errors" })}
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  const centavos = paraCentavos(pendente);
 
   if (centavos === 0) return null;
 
