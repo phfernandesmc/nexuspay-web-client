@@ -43,13 +43,14 @@ transações passa pela fila SQS `api-processar-transferencia-worker.fifo`,
 que é compartilhada entre desenvolvimento e produção; um teste automatizado
 não pode publicar nela só para gerar dados de fixture.
 
-**Fechado na Fatia 3c**: `tests/e2e/dinheiro.spec.ts` criou o caminho de
-depósito de ponta a ponta que faltava, gerando transações de verdade via o
-fluxo real da UI contra o gateway real. Isso remove o bloqueio descrito
-acima — a 3b não tinha como criar uma transação sem tocar numa fila que não
-era dela, e agora existe. O teste de "Carregar mais" em si, clicando o botão
-contra uma segunda página de verdade, não foi escrito nesta fatia; ele fica
-como trabalho futuro trivial agora que a fonte da transação existe.
+**Bloqueio removido na Fatia 3c, teste ainda não escrito**: `tests/e2e/dinheiro.spec.ts`
+criou o caminho de depósito (e, com esta onda de correções, o de
+transferência) de ponta a ponta que faltava, gerando transações de verdade
+via o fluxo real da UI contra o gateway real. Isso remove o bloqueio
+descrito acima — a 3b não tinha como criar uma transação sem tocar numa fila
+que não era dela, e agora existe. O teste de "Carregar mais" em si, clicando
+o botão contra uma segunda página de verdade, não foi escrito nesta fatia;
+ele fica como trabalho futuro trivial agora que a fonte da transação existe.
 
 ### O ciclo completo de encerrar conta agora tem teste encadeado
 
