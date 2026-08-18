@@ -139,6 +139,49 @@ describe("adicionar contato", () => {
     expect(alerta).not.toHaveTextContent(i18n.t("CONTACT_OWN_ACCOUNT", { ns: "errors" }));
   });
 
+  it("'Buscar outra conta' limpa o erro e o apelido da tentativa anterior", async () => {
+    // Reproduz o defeito da Fatia 3b, repetido aqui: buscar uma conta,
+    // digitar um apelido, falhar ao salvar por CONTACT_ALREADY_EXISTS,
+    // clicar "Buscar outra conta" e buscar uma conta DIFERENTE. Sem limpar
+    // erro e alias junto com achada, a tela mostraria o titular novo com a
+    // mensagem de erro da conta anterior e o apelido "Ana" ainda preenchido
+    // — a §5 do spec chama isto de "o coracao da seguranca" desta tela.
+    const outraAchada = {
+      account_id: "dddddddd-0000-0000-0000-000000000002",
+      holder_name: "J**** P****",
+      type: "CHECKING",
+      institution: instituicao,
+    };
+    let tentativas = 0;
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/contacts/lookup`, () => {
+        tentativas += 1;
+        return HttpResponse.json(tentativas === 1 ? achada : outraAchada);
+      }),
+      mswHttp.post(`${URL_TESTE}/contacts`, () =>
+        HttpResponse.json(
+          { error: { code: "CONTACT_ALREADY_EXISTS", message: "", details: {} } },
+          { status: 409 },
+        ),
+      ),
+    );
+
+    envolverComQuery(<AddContactDialog aberto onFechar={() => {}} />);
+    const usuario = await preencherBusca();
+
+    await screen.findByText(/M\*{4} S\*{4}/);
+    await usuario.type(screen.getByLabelText("Apelido"), "Ana");
+    await usuario.click(screen.getByRole("button", { name: "Salvar contato" }));
+    await screen.findByRole("alert");
+
+    await usuario.click(screen.getByRole("button", { name: "Buscar outra conta" }));
+    await preencherBusca();
+    await screen.findByText(/J\*{4} P\*{4}/);
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Apelido")).toHaveValue("");
+  });
+
   it("conta inexistente na busca mostra o erro e nao avanca para a confirmacao", async () => {
     servidor.use(
       mswHttp.post(`${URL_TESTE}/contacts/lookup`, () =>

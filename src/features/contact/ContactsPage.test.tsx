@@ -121,6 +121,55 @@ describe("lista de contatos", () => {
 
     await usuario.click(await screen.findByRole("button", { name: "Remover" }));
     await waitFor(() => expect(removeu).toBe(true));
+    // Criterio 5 do spec: nao basta o DELETE disparar, a linha precisa SUMIR
+    // da lista. Sem o onSuccess de useRemoverContato invalidando CHAVES,
+    // o DELETE acontece no servidor e a lista em cache continua mostrando
+    // "Ana" para sempre.
+    await waitFor(() => expect(screen.queryByText("Ana")).not.toBeInTheDocument());
+  });
+
+  it("cancelar depois de uma remocao que falhou limpa o alerta", async () => {
+    // Sem limpar erro/rascunho no Cancelar, uma remocao que falha deixa o
+    // alerta na linha PARA SEMPRE: executar() so limpa erro no INICIO da
+    // proxima tentativa, nunca no cancelamento. AccountsPage.tsx e
+    // AccountDetailPage.tsx desmontam ao fechar para o estado morrer junto;
+    // ContactRow e o unico lugar da fatia que fica montado e precisa limpar
+    // na mao.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/contacts`, () => HttpResponse.json([contato("1", "Ana", false)])),
+      mswHttp.delete(`${URL_TESTE}/contacts/1`, () => HttpResponse.error()),
+    );
+
+    envolverComQuery(<ContactsPage />);
+    await screen.findByText("Ana");
+
+    const usuario = userEvent.setup();
+    await usuario.click(screen.getByRole("button", { name: "Remover" }));
+    await usuario.click(await screen.findByRole("button", { name: "Remover" }));
+
+    await screen.findByRole("alert");
+    await usuario.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("cancelar renomear descarta o rascunho: reabrir mostra o apelido real", async () => {
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/contacts`, () => HttpResponse.json([contato("1", "Ana", false)])),
+    );
+
+    envolverComQuery(<ContactsPage />);
+    await screen.findByText("Ana");
+
+    const usuario = userEvent.setup();
+    await usuario.click(screen.getByRole("button", { name: "Renomear" }));
+    const campo = await screen.findByLabelText("Apelido");
+    await usuario.clear(campo);
+    await usuario.type(campo, "Rascunho Abandonado");
+    await usuario.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    await usuario.click(await screen.findByRole("button", { name: "Renomear" }));
+    expect(await screen.findByLabelText("Apelido")).toHaveValue("Ana");
   });
 
   it("renomear REFAZ a lista com o apelido novo", async () => {

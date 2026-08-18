@@ -91,7 +91,14 @@ export default function ContactRow({ contato }: { contato: Contato }) {
             >
               {t("contact:save")}
             </Button>
-            <Button variant="ghost" onClick={() => setRenomeando(false)}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setRenomeando(false);
+                setErro(null);
+                setAlias(contato.alias);
+              }}
+            >
               {t("contact:cancel")}
             </Button>
           </div>
@@ -108,7 +115,14 @@ export default function ContactRow({ contato }: { contato: Contato }) {
             >
               {t("contact:removeConfirmButton")}
             </Button>
-            <Button variant="ghost" onClick={() => setConfirmandoRemocao(false)}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setConfirmandoRemocao(false);
+                setErro(null);
+                setAlias(contato.alias);
+              }}
+            >
               {t("contact:cancel")}
             </Button>
           </div>

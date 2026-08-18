@@ -78,7 +78,14 @@ export default function AddContactDialog({
             >
               {salvar.isPending ? t("contact:saving") : t("contact:save")}
             </Button>
-            <Button variant="outline" onClick={() => setAchada(null)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAchada(null);
+                setErro(null);
+                setAlias("");
+              }}
+            >
               {t("contact:searchAgain")}
             </Button>
           </div>
