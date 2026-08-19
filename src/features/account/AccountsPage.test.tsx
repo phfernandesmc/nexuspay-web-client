@@ -125,6 +125,7 @@ describe("lista de contas", () => {
 
     expect(await screen.findByText(/500,00/)).toBeInTheDocument();
     expect(screen.getByText(/400,00/)).toBeInTheDocument();
+    expect(screen.getByText(/Dispon[ií]vel/)).toBeInTheDocument();
   });
 
   it("o cartao mostra so o saldo quando nao ha saida pendente", async () => {
@@ -138,7 +139,11 @@ describe("lista de contas", () => {
 
     montar();
 
-    await screen.findByText(/500,00/);
-    expect(screen.queryByText("Disponível")).not.toBeInTheDocument();
+    // Espera pelo cartao pelo testid, nao pelo valor: com a mutacao
+    // pending_outgoing >= 0 o saldo e o disponivel viram o mesmo texto
+    // "R$ 500,00" duplicado, e findByText(/500,00/) estouraria por
+    // ambiguidade antes mesmo de chegar na asserção que importa aqui.
+    await screen.findByTestId(`conta-${conta.id}`);
+    expect(screen.queryByText(/Dispon[ií]vel/)).not.toBeInTheDocument();
   });
 });
