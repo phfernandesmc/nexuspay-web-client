@@ -28,10 +28,12 @@ export default function TransferPage() {
   const [valor, setValor] = useState("");
   const [erro, setErro] = useState<string | null>(null);
 
-  // As duas entradas terminam no mesmo lugar: um account_id, que e o que o
-  // gateway pede. Contato e conveniencia da interface, nada mais.
+  // As TRES entradas terminam no mesmo lugar: um account_id, que e o que o
+  // gateway pede. Conta propria ja tem o id em maos; contato guarda o id da
+  // conta alvo; a busca devolve o id.
   const destinoId =
     achada?.account_id ??
+    (contas ?? []).find((c) => c.id === contatoId)?.id ??
     (contatos ?? []).find((c) => c.id === contatoId)?.target_account.id ??
     "";
 
@@ -134,11 +136,24 @@ export default function TransferPage() {
             onChange={(evento) => setContatoId(evento.target.value)}
           >
             <option value="" />
-            {(contatos ?? []).map((contato) => (
-              <option key={contato.id} value={contato.id}>
-                {contato.alias} · {contato.target_account.holder_name}
-              </option>
-            ))}
+            <optgroup label={t("transaction:myAccounts")}>
+              {(contas ?? [])
+                // A origem sai da lista: mandar para a mesma conta e recusado
+                // pelo gateway, e nao ha por que oferecer o erro.
+                .filter((c) => c.id !== origemId)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.alias ?? c.number} · {c.institution.name} · {c.number}
+                  </option>
+                ))}
+            </optgroup>
+            <optgroup label={t("transaction:myContacts")}>
+              {(contatos ?? []).map((contato) => (
+                <option key={contato.id} value={contato.id}>
+                  {contato.alias} · {contato.target_account.holder_name}
+                </option>
+              ))}
+            </optgroup>
           </select>
           {/* A falha de rede nao pode se disfarcar de "voce nao tem contatos":
               o select vazio ficaria identico ao "sem contatos salvos ainda".

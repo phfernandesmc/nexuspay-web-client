@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { http as mswHttp, HttpResponse } from "msw";
@@ -23,6 +23,13 @@ const conta = {
   status: "ACTIVE",
   institution: instituicao,
   created_at: "2026-03-01T10:00:00Z",
+};
+
+const outraConta = {
+  ...conta,
+  id: "conta-2",
+  number: "99999999",
+  alias: "Reserva",
 };
 
 const contato = {
@@ -125,8 +132,12 @@ beforeEach(async () => {
 });
 
 async function escolherOrigem(usuario: ReturnType<typeof userEvent.setup>) {
-  await screen.findByRole("option", { name: /Principal/ });
-  await usuario.selectOptions(screen.getByLabelText("Conta de origem"), conta.id);
+  // Escopado ao select de origem: antes de uma origem ser escolhida, o
+  // destino tambem lista "Principal" entre as contas proprias (nada foi
+  // excluido ainda), entao um findByRole global neste nome fica ambiguo.
+  const origem = screen.getByLabelText("Conta de origem");
+  await within(origem).findByRole("option", { name: /Principal/ });
+  await usuario.selectOptions(origem, conta.id);
 }
 
 describe("transferencia", () => {
@@ -482,5 +493,81 @@ describe("transferencia", () => {
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
 
     await waitFor(() => expect(buscasDestino).toBeGreaterThan(antes));
+  });
+
+  it("transfere para uma conta propria sem passar pelo lookup", async () => {
+    let usouLookup = false;
+    let corpo: unknown = null;
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
+      mswHttp.post(`${URL_TESTE}/contacts/lookup`, () => {
+        usouLookup = true;
+        return HttpResponse.json({});
+      }),
+      mswHttp.post(`${URL_TESTE}/transactions/transfer`, async ({ request }) => {
+        corpo = await request.json();
+        return respostaTransacao(202);
+      }),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    // Escopado ao select de destino: "Reserva" tambem aparece no select de
+    // origem (a lista completa, sem filtro), entao um findByRole global
+    // neste nome fica ambiguo.
+    const destinoParaEnvio = screen.getByLabelText("Destino");
+    await within(destinoParaEnvio).findByRole("option", { name: /Reserva/ });
+    await usuario.selectOptions(destinoParaEnvio, "conta-2");
+    await usuario.type(screen.getByLabelText("Valor"), "100.00");
+    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+
+    await waitFor(() =>
+      expect(corpo).toEqual({
+        source_account_id: conta.id,
+        destination_account_id: "conta-2",
+        amount: "100.00",
+      }),
+    );
+    // Conta propria nao precisa de busca: o id ja estava na tela.
+    expect(usouLookup).toBe(false);
+  });
+
+  it("a conta escolhida como origem NAO aparece entre os destinos", async () => {
+    // Mandar para a mesma conta e recusado pelo gateway com
+    // SAME_ACCOUNT_TRANSFER. Tirar a origem da lista elimina o erro por
+    // construcao, em vez de deixa-lo acontecer e traduzir a recusa.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+
+    const destino = screen.getByLabelText("Destino");
+    await within(destino).findByRole("option", { name: /Reserva/ });
+    expect(
+      within(destino).queryByRole("option", { name: /Principal/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("trocar a origem devolve a conta anterior a lista de destinos", async () => {
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    const destino = screen.getByLabelText("Destino");
+    await within(destino).findByRole("option", { name: /Reserva/ });
+
+    await usuario.selectOptions(screen.getByLabelText("Conta de origem"), "conta-2");
+
+    expect(within(destino).getByRole("option", { name: /Principal/ })).toBeInTheDocument();
+    expect(
+      within(destino).queryByRole("option", { name: /Reserva/ }),
+    ).not.toBeInTheDocument();
   });
 });
