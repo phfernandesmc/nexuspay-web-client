@@ -1,8 +1,6 @@
 import { http } from "@/lib/http";
 import type { PaginaExtrato } from "@/features/statement/types";
 
-export const LIMITE_MAXIMO = 100;
-
 /**
  * Uma pagina do extrato.
  *

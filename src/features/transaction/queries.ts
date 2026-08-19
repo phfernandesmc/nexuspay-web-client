@@ -32,14 +32,13 @@ export function motivoTraduzivel(motivo: string | null): string {
 
 /**
  * Depois de mover dinheiro, tudo que depende de conta esta velho: a lista,
- * o saldo do detalhe, o extrato e a soma de pendentes. Invalidar so a lista
- * deixaria o extrato mostrando o estado anterior.
+ * o saldo do detalhe e o extrato. Invalidar so a lista deixaria o extrato
+ * mostrando o estado anterior.
  */
 function invalidarTudoDeConta(qc: ReturnType<typeof useQueryClient>, contaId: string) {
   void qc.invalidateQueries({ queryKey: CHAVES.contas() });
   void qc.invalidateQueries({ queryKey: CHAVES.conta(contaId) });
   void qc.invalidateQueries({ queryKey: CHAVES.extrato(contaId) });
-  void qc.invalidateQueries({ queryKey: CHAVES.extratoPendentes(contaId) });
 }
 
 export function useDepositar() {

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
-import { http as mswHttp, HttpResponse, delay } from "msw";
+import { http as mswHttp, HttpResponse } from "msw";
 import { servidor, URL_TESTE } from "@/test/msw";
 import { envolverComQuery } from "@/test/queryWrapper";
 import { useSession } from "@/features/auth/session.store";
@@ -19,7 +19,7 @@ const conta = {
   alias: "Principal",
   type: "CHECKING",
   balance: "500.00",
-  pending_outgoing: "0.00",
+  pending_outgoing: "100.00",
   status: "ACTIVE",
   institution: instituicao,
   created_at: "2026-03-01T10:00:00Z",
@@ -414,14 +414,13 @@ describe("transferencia", () => {
     expect(chaves[0]).toBe(chaves[1]);
   });
 
-  it("enquanto os pendentes carregam, nao mostra disponivel nenhum", async () => {
-    // Mostrar "disponivel = saldo - 0" enquanto a consulta ainda esta em voo
-    // afirmaria um numero que pode mudar assim que ela responder. O handler
-    // aqui nunca resolve (delay("infinite")), entao o estado PENDING e
-    // garantido durante todo o teste — nao e uma corrida de timing.
+  it("o disponivel vem da conta, sem consultar o extrato", async () => {
+    // Se a tela voltasse a consultar o extrato para descobrir o pendente,
+    // este handler seria chamado — e o furo dos 100 itens estaria de volta.
+    let consultouExtrato = false;
     servidor.use(
-      mswHttp.get(`${URL_TESTE}/accounts/${conta.id}/statement`, async () => {
-        await delay("infinite");
+      mswHttp.get(`${URL_TESTE}/accounts/:id/statement`, () => {
+        consultouExtrato = true;
         return HttpResponse.json({ items: [], next_cursor: null });
       }),
     );
@@ -430,28 +429,21 @@ describe("transferencia", () => {
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
 
-    expect(screen.queryByText(/Disponível/)).not.toBeInTheDocument();
+    // conta.balance e "500.00" e conta.pending_outgoing e "100.00" no
+    // fixture: o disponivel precisa ser 400,00, nao 500,00.
+    expect(await screen.findByText(/400,00/)).toBeInTheDocument();
+    expect(consultouExtrato).toBe(false);
   });
 
-  it("erro ao carregar pendentes esconde o disponivel e mostra o alerta traduzido", async () => {
-    // Reproduz o defeito que a review da Fatia 3b ja corrigiu em
-    // PendingBalanceLine.tsx (commit 4c3ff48): sem tratar isError, a falha de
-    // rede caia no mesmo `?? []` do "sem pendencias" e a tela afirmava que o
-    // saldo CHEIO estava disponivel quando ninguem sabia.
-    servidor.use(
-      mswHttp.get(`${URL_TESTE}/accounts/${conta.id}/statement`, () => HttpResponse.error()),
-    );
+  it("falha ao carregar contas nao exibe disponivel nenhum", async () => {
+    // Criterio 12 do spec. Sem conta nao ha saldo nem pendente, entao nao ha
+    // disponivel a mostrar — e mostrar zero seria pior que nao mostrar nada.
+    servidor.use(mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.error()));
 
     montar();
-    const usuario = userEvent.setup();
-    await escolherOrigem(usuario);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Não conseguimos falar com o servidor. Verifique sua conexão.",
-    );
-    // A segunda metade da prova: sem o alerta, o disponivel nao pode
-    // aparecer disfarcado de "esta tudo disponivel".
-    expect(screen.queryByText(/Disponível/)).not.toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByText(/Dispon/)).not.toBeInTheDocument();
   });
 
   it("transferencia bem sucedida REFAZ o saldo em cache da conta de destino", async () => {

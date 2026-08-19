@@ -9,7 +9,6 @@ import { useContas } from "@/features/account/queries";
 import AccountLookup from "@/features/contact/AccountLookup";
 import { useContatos } from "@/features/contact/queries";
 import type { ResultadoBusca } from "@/features/contact/types";
-import { usePendentesDeSaida } from "@/features/statement/queries";
 import { useChaveDeIntencao } from "@/features/transaction/idempotency";
 import { useTransferir } from "@/features/transaction/queries";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
@@ -46,15 +45,12 @@ export default function TransferPage() {
   });
 
   const origem = (contas ?? []).find((c) => c.id === origemId);
-  const pendentes = usePendentesDeSaida(origemId);
-  // Mesma regra de PendingBalanceLine.tsx: enquanto a consulta de pendentes
-  // carrega, ou se ela falhar, "disponivel = saldo - 0" mostraria o saldo
-  // CHEIO como se estivesse confirmado. Sem disponivel confiavel, nao ha
-  // "disponivel" para mostrar nem "acima do disponivel" para avisar.
+  // O pendente vem junto com a conta. Ate a Fatia 3c isto era derivado de
+  // uma consulta ao extrato com limit=100, e podia ficar MAIOR que o real.
   const disponivelCentavos =
-    origem === undefined || pendentes.isPending || pendentes.isError
+    origem === undefined
       ? null
-      : paraCentavos(origem.balance) - pendentes.centavos;
+      : paraCentavos(origem.balance) - paraCentavos(origem.pending_outgoing);
   const valorCentavos = (() => {
     try {
       return valor.trim() === "" ? null : paraCentavos(valor.trim());
@@ -126,14 +122,6 @@ export default function TransferPage() {
         <p className="text-sm text-muted-foreground">
           {t("transaction:available")}: {formatarDinheiro(disponivelCentavos, i18n.language)}
         </p>
-      )}
-
-      {pendentes.isError && (
-        <Alert variant="destructive" role="alert">
-          <AlertDescription>
-            {t(codigoTraduzivel(extrairErro(pendentes.error).code), { ns: "errors" })}
-          </AlertDescription>
-        </Alert>
       )}
 
       {achada === null ? (

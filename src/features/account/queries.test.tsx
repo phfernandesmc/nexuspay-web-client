@@ -50,7 +50,6 @@ describe("consultas de conta", () => {
     expect(CHAVES.contas()).toEqual(["contas"]);
     expect(CHAVES.conta("x")).toEqual(["conta", "x"]);
     expect(CHAVES.extrato("x")).toEqual(["extrato", "x"]);
-    expect(CHAVES.extratoPendentes("x")).toEqual(["extrato-pendentes", "x"]);
     expect(CHAVES.instituicoes()).toEqual(["instituicoes"]);
   });
 
