@@ -87,7 +87,8 @@
     "close": "Close account",
     "closeConfirm": "Close this account? It will leave your list.",
     "save": "Save",
-    "closeConfirmButton": "Close"
+    "closeConfirmButton": "Close",
+    "available": "Available"
   },
   "statement": {
     "title": "Statement",

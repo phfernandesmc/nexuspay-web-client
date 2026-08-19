@@ -24,6 +24,15 @@ export default function AccountCard({ conta }: { conta: Conta }) {
       <p className="mt-2 text-xl font-semibold">
         {formatarDinheiro(paraCentavos(conta.balance), i18n.resolvedLanguage ?? "pt-BR")}
       </p>
+      {paraCentavos(conta.pending_outgoing) > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {t("account:available")}:{" "}
+          {formatarDinheiro(
+            paraCentavos(conta.balance) - paraCentavos(conta.pending_outgoing),
+            i18n.resolvedLanguage ?? "pt-BR",
+          )}
+        </p>
+      )}
     </Link>
   );
 }

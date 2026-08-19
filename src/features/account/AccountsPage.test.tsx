@@ -113,4 +113,32 @@ describe("lista de contas", () => {
     await waitFor(() => expect(screen.getByText(/1,234\.56/)).toBeInTheDocument());
     expect(chamadas).toBe(1);
   });
+
+  it("o cartao mostra saldo E disponivel quando ha saida pendente", async () => {
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () =>
+        HttpResponse.json([{ ...conta, balance: "500.00", pending_outgoing: "100.00" }]),
+      ),
+    );
+
+    montar();
+
+    expect(await screen.findByText(/500,00/)).toBeInTheDocument();
+    expect(screen.getByText(/400,00/)).toBeInTheDocument();
+  });
+
+  it("o cartao mostra so o saldo quando nao ha saida pendente", async () => {
+    // Sem pendencia os dois numeros sao iguais, e repetir o mesmo valor
+    // duas vezes e ruido.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () =>
+        HttpResponse.json([{ ...conta, balance: "500.00", pending_outgoing: "0.00" }]),
+      ),
+    );
+
+    montar();
+
+    await screen.findByText(/500,00/);
+    expect(screen.queryByText("Disponível")).not.toBeInTheDocument();
+  });
 });

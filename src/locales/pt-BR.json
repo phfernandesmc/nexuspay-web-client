@@ -87,7 +87,8 @@
     "close": "Encerrar conta",
     "closeConfirm": "Encerrar esta conta? Ela sai da sua lista.",
     "save": "Salvar",
-    "closeConfirmButton": "Encerrar"
+    "closeConfirmButton": "Encerrar",
+    "available": "Disponível"
   },
   "statement": {
     "title": "Extrato",
