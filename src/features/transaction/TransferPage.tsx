@@ -173,8 +173,7 @@ export default function TransferPage() {
           {/* A falha de rede nao pode se disfarcar de "voce nao tem contatos":
               o select vazio ficaria identico ao "sem contatos salvos ainda".
               "Buscar outra conta" continua funcionando sem esta lista, entao
-              o alerta e inline em vez de bloquear a tela inteira — mesmo
-              padrao de PendingBalanceLine.tsx. */}
+              o alerta e inline em vez de bloquear a tela inteira. */}
           {contatosComErro && (
             <Alert variant="destructive" role="alert">
               <AlertDescription>

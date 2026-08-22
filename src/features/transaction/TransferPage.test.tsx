@@ -559,6 +559,34 @@ describe("transferencia", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("o destino separa contas proprias e contatos em dois grupos distintos, cada um com a opcao certa", async () => {
+    // Criterio 1 do spec. Sem os dois <optgroup>, "Minhas contas" e "Meus
+    // contatos" ficam chaves orfas nos dois dicionarios de traducao sem
+    // nada acusar — nenhum outro teste desta pagina afirma que os grupos
+    // existem como grupos, so que as opcoes individuais aparecem.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    const destino = screen.getByLabelText("Destino") as HTMLSelectElement;
+    await within(destino).findByRole("option", { name: /Maria/ });
+
+    const grupos = destino.querySelectorAll("optgroup");
+    expect(grupos).toHaveLength(2);
+    expect(grupos[0].label).toBe("Minhas contas");
+    expect(grupos[1].label).toBe("Meus contatos");
+
+    expect(
+      within(grupos[0]).getByRole("option", { name: /Reserva/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(grupos[1]).getByRole("option", { name: /Maria/ }),
+    ).toBeInTheDocument();
+  });
+
   it("trocar a origem devolve a conta anterior a lista de destinos", async () => {
     servidor.use(
       mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
