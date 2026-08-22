@@ -60,6 +60,12 @@ As chaves de cache das contas ficam todas em um lugar só,
 delas casarem exatamente — uma chave escrita à mão fora dali não invalida
 nada, e o sintoma é um saldo velho que só some ao recarregar a página.
 
+Cada conta traz `pending_outgoing`: a soma crua das saídas `PENDING` dessa
+conta, calculada pelo gateway. O disponível não vem pronto do servidor — o
+cliente calcula `balance − pending_outgoing` (`AccountCard.tsx`) — mas o
+número de entrada já é exato, sem a janela de transações recentes que um
+cálculo derivado do extrato exigiria.
+
 Transferência e depósito exigem o cabeçalho `Idempotency-Key`. A chave é
 gerada por intenção — muda quando muda a conta de origem, o destino ou o
 valor — e presa ao payload que ela representa; ela **não é persistida**, e
