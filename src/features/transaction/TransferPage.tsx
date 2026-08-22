@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import { useContas } from "@/features/account/queries";
 import AccountLookup from "@/features/contact/AccountLookup";
 import { useContatos } from "@/features/contact/queries";
 import type { ResultadoBusca } from "@/features/contact/types";
-import { usePendentesDeSaida } from "@/features/statement/queries";
 import { useChaveDeIntencao } from "@/features/transaction/idempotency";
 import { useTransferir } from "@/features/transaction/queries";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
@@ -29,10 +29,12 @@ export default function TransferPage() {
   const [valor, setValor] = useState("");
   const [erro, setErro] = useState<string | null>(null);
 
-  // As duas entradas terminam no mesmo lugar: um account_id, que e o que o
-  // gateway pede. Contato e conveniencia da interface, nada mais.
+  // As TRES entradas terminam no mesmo lugar: um account_id, que e o que o
+  // gateway pede. Conta propria ja tem o id em maos; contato guarda o id da
+  // conta alvo; a busca devolve o id.
   const destinoId =
     achada?.account_id ??
+    (contas ?? []).find((c) => c.id === contatoId)?.id ??
     (contatos ?? []).find((c) => c.id === contatoId)?.target_account.id ??
     "";
 
@@ -46,15 +48,12 @@ export default function TransferPage() {
   });
 
   const origem = (contas ?? []).find((c) => c.id === origemId);
-  const pendentes = usePendentesDeSaida(origemId);
-  // Mesma regra de PendingBalanceLine.tsx: enquanto a consulta de pendentes
-  // carrega, ou se ela falhar, "disponivel = saldo - 0" mostraria o saldo
-  // CHEIO como se estivesse confirmado. Sem disponivel confiavel, nao ha
-  // "disponivel" para mostrar nem "acima do disponivel" para avisar.
+  // O pendente vem junto com a conta. Ate a Fatia 3c isto era derivado de
+  // uma consulta ao extrato com limit=100, e podia ficar MAIOR que o real.
   const disponivelCentavos =
-    origem === undefined || pendentes.isPending || pendentes.isError
+    origem === undefined
       ? null
-      : paraCentavos(origem.balance) - pendentes.centavos;
+      : paraCentavos(origem.balance) - paraCentavos(origem.pending_outgoing);
   const valorCentavos = (() => {
     try {
       return valor.trim() === "" ? null : paraCentavos(valor.trim());
@@ -64,6 +63,20 @@ export default function TransferPage() {
   })();
   const acimaDoDisponivel =
     disponivelCentavos !== null && valorCentavos !== null && valorCentavos > disponivelCentavos;
+
+  // Trocar a origem para a conta que estava escolhida como destino faz a
+  // <option> sumir do select de destino (filtrado pela origem), mas o
+  // DOM sumir nao limpa o estado React sozinho: contatoId continuaria
+  // "conta-2", o botao ficaria habilitavel, e o envio mandaria origem ==
+  // destino — exatamente o erro que o filtro deveria eliminar por
+  // construcao (SAME_ACCOUNT_TRANSFER por outra porta).
+  function aoTrocarOrigem(evento: ChangeEvent<HTMLSelectElement>) {
+    const novaOrigemId = evento.target.value;
+    setOrigemId(novaOrigemId);
+    if (novaOrigemId !== "" && novaOrigemId === contatoId) {
+      setContatoId("");
+    }
+  }
 
   async function aoEnviar() {
     setErro(null);
@@ -111,7 +124,7 @@ export default function TransferPage() {
           id="transferencia-origem"
           className="rounded border px-2 py-1"
           value={origemId}
-          onChange={(evento) => setOrigemId(evento.target.value)}
+          onChange={aoTrocarOrigem}
         >
           <option value="" />
           {(contas ?? []).map((conta) => (
@@ -128,14 +141,6 @@ export default function TransferPage() {
         </p>
       )}
 
-      {pendentes.isError && (
-        <Alert variant="destructive" role="alert">
-          <AlertDescription>
-            {t(codigoTraduzivel(extrairErro(pendentes.error).code), { ns: "errors" })}
-          </AlertDescription>
-        </Alert>
-      )}
-
       {achada === null ? (
         <div className="flex flex-col gap-2">
           <Label htmlFor="transferencia-destino">{t("transaction:destination")}</Label>
@@ -146,17 +151,29 @@ export default function TransferPage() {
             onChange={(evento) => setContatoId(evento.target.value)}
           >
             <option value="" />
-            {(contatos ?? []).map((contato) => (
-              <option key={contato.id} value={contato.id}>
-                {contato.alias} · {contato.target_account.holder_name}
-              </option>
-            ))}
+            <optgroup label={t("transaction:myAccounts")}>
+              {(contas ?? [])
+                // A origem sai da lista: mandar para a mesma conta e recusado
+                // pelo gateway, e nao ha por que oferecer o erro.
+                .filter((c) => c.id !== origemId)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.alias ?? c.number} · {c.institution.name} · {c.number}
+                  </option>
+                ))}
+            </optgroup>
+            <optgroup label={t("transaction:myContacts")}>
+              {(contatos ?? []).map((contato) => (
+                <option key={contato.id} value={contato.id}>
+                  {contato.alias} · {contato.target_account.holder_name}
+                </option>
+              ))}
+            </optgroup>
           </select>
           {/* A falha de rede nao pode se disfarcar de "voce nao tem contatos":
               o select vazio ficaria identico ao "sem contatos salvos ainda".
               "Buscar outra conta" continua funcionando sem esta lista, entao
-              o alerta e inline em vez de bloquear a tela inteira — mesmo
-              padrao de PendingBalanceLine.tsx. */}
+              o alerta e inline em vez de bloquear a tela inteira. */}
           {contatosComErro && (
             <Alert variant="destructive" role="alert">
               <AlertDescription>

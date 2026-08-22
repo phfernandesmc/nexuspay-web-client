@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
-import { http as mswHttp, HttpResponse, delay } from "msw";
+import { http as mswHttp, HttpResponse } from "msw";
 import { servidor, URL_TESTE } from "@/test/msw";
 import { envolverComQuery } from "@/test/queryWrapper";
 import { useSession } from "@/features/auth/session.store";
@@ -19,9 +19,24 @@ const conta = {
   alias: "Principal",
   type: "CHECKING",
   balance: "500.00",
+  pending_outgoing: "100.00",
   status: "ACTIVE",
   institution: instituicao,
   created_at: "2026-03-01T10:00:00Z",
+};
+
+const outraConta = {
+  ...conta,
+  id: "conta-2",
+  number: "99999999",
+  alias: "Reserva",
+};
+
+const terceiraConta = {
+  ...conta,
+  id: "conta-3",
+  number: "11122233",
+  alias: "Viagem",
 };
 
 const contato = {
@@ -48,6 +63,7 @@ const contaMaria = {
   alias: "Da Maria",
   type: "CHECKING",
   balance: "10.00",
+  pending_outgoing: "0.00",
   status: "ACTIVE",
   institution: instituicao,
   created_at: "2026-03-01T10:00:00Z",
@@ -123,8 +139,12 @@ beforeEach(async () => {
 });
 
 async function escolherOrigem(usuario: ReturnType<typeof userEvent.setup>) {
-  await screen.findByRole("option", { name: /Principal/ });
-  await usuario.selectOptions(screen.getByLabelText("Conta de origem"), conta.id);
+  // Escopado ao select de origem: antes de uma origem ser escolhida, o
+  // destino tambem lista "Principal" entre as contas proprias (nada foi
+  // excluido ainda), entao um findByRole global neste nome fica ambiguo.
+  const origem = screen.getByLabelText("Conta de origem");
+  await within(origem).findByRole("option", { name: /Principal/ });
+  await usuario.selectOptions(origem, conta.id);
 }
 
 describe("transferencia", () => {
@@ -412,14 +432,13 @@ describe("transferencia", () => {
     expect(chaves[0]).toBe(chaves[1]);
   });
 
-  it("enquanto os pendentes carregam, nao mostra disponivel nenhum", async () => {
-    // Mostrar "disponivel = saldo - 0" enquanto a consulta ainda esta em voo
-    // afirmaria um numero que pode mudar assim que ela responder. O handler
-    // aqui nunca resolve (delay("infinite")), entao o estado PENDING e
-    // garantido durante todo o teste — nao e uma corrida de timing.
+  it("o disponivel vem da conta, sem consultar o extrato", async () => {
+    // Se a tela voltasse a consultar o extrato para descobrir o pendente,
+    // este handler seria chamado — e o furo dos 100 itens estaria de volta.
+    let consultouExtrato = false;
     servidor.use(
-      mswHttp.get(`${URL_TESTE}/accounts/${conta.id}/statement`, async () => {
-        await delay("infinite");
+      mswHttp.get(`${URL_TESTE}/accounts/:id/statement`, () => {
+        consultouExtrato = true;
         return HttpResponse.json({ items: [], next_cursor: null });
       }),
     );
@@ -428,28 +447,21 @@ describe("transferencia", () => {
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
 
-    expect(screen.queryByText(/Disponível/)).not.toBeInTheDocument();
+    // conta.balance e "500.00" e conta.pending_outgoing e "100.00" no
+    // fixture: o disponivel precisa ser 400,00, nao 500,00.
+    expect(await screen.findByText(/400,00/)).toBeInTheDocument();
+    expect(consultouExtrato).toBe(false);
   });
 
-  it("erro ao carregar pendentes esconde o disponivel e mostra o alerta traduzido", async () => {
-    // Reproduz o defeito que a review da Fatia 3b ja corrigiu em
-    // PendingBalanceLine.tsx (commit 4c3ff48): sem tratar isError, a falha de
-    // rede caia no mesmo `?? []` do "sem pendencias" e a tela afirmava que o
-    // saldo CHEIO estava disponivel quando ninguem sabia.
-    servidor.use(
-      mswHttp.get(`${URL_TESTE}/accounts/${conta.id}/statement`, () => HttpResponse.error()),
-    );
+  it("falha ao carregar contas nao exibe disponivel nenhum", async () => {
+    // Criterio 12 do spec. Sem conta nao ha saldo nem pendente, entao nao ha
+    // disponivel a mostrar — e mostrar zero seria pior que nao mostrar nada.
+    servidor.use(mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.error()));
 
     montar();
-    const usuario = userEvent.setup();
-    await escolherOrigem(usuario);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Não conseguimos falar com o servidor. Verifique sua conexão.",
-    );
-    // A segunda metade da prova: sem o alerta, o disponivel nao pode
-    // aparecer disfarcado de "esta tudo disponivel".
-    expect(screen.queryByText(/Disponível/)).not.toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByText(/Dispon/)).not.toBeInTheDocument();
   });
 
   it("transferencia bem sucedida REFAZ o saldo em cache da conta de destino", async () => {
@@ -488,5 +500,158 @@ describe("transferencia", () => {
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
 
     await waitFor(() => expect(buscasDestino).toBeGreaterThan(antes));
+  });
+
+  it("transfere para uma conta propria sem passar pelo lookup", async () => {
+    let usouLookup = false;
+    let corpo: unknown = null;
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
+      mswHttp.post(`${URL_TESTE}/contacts/lookup`, () => {
+        usouLookup = true;
+        return HttpResponse.json({});
+      }),
+      mswHttp.post(`${URL_TESTE}/transactions/transfer`, async ({ request }) => {
+        corpo = await request.json();
+        return respostaTransacao(202);
+      }),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    // Escopado ao select de destino: "Reserva" tambem aparece no select de
+    // origem (a lista completa, sem filtro), entao um findByRole global
+    // neste nome fica ambiguo.
+    const destinoParaEnvio = screen.getByLabelText("Destino");
+    await within(destinoParaEnvio).findByRole("option", { name: /Reserva/ });
+    await usuario.selectOptions(destinoParaEnvio, "conta-2");
+    await usuario.type(screen.getByLabelText("Valor"), "100.00");
+    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+
+    await waitFor(() =>
+      expect(corpo).toEqual({
+        source_account_id: conta.id,
+        destination_account_id: "conta-2",
+        amount: "100.00",
+      }),
+    );
+    // Conta propria nao precisa de busca: o id ja estava na tela.
+    expect(usouLookup).toBe(false);
+  });
+
+  it("a conta escolhida como origem NAO aparece entre os destinos", async () => {
+    // Mandar para a mesma conta e recusado pelo gateway com
+    // SAME_ACCOUNT_TRANSFER. Tirar a origem da lista elimina o erro por
+    // construcao, em vez de deixa-lo acontecer e traduzir a recusa.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+
+    const destino = screen.getByLabelText("Destino");
+    await within(destino).findByRole("option", { name: /Reserva/ });
+    expect(
+      within(destino).queryByRole("option", { name: /Principal/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("o destino separa contas proprias e contatos em dois grupos distintos, cada um com a opcao certa", async () => {
+    // Criterio 1 do spec. Sem os dois <optgroup>, "Minhas contas" e "Meus
+    // contatos" ficam chaves orfas nos dois dicionarios de traducao sem
+    // nada acusar — nenhum outro teste desta pagina afirma que os grupos
+    // existem como grupos, so que as opcoes individuais aparecem.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    const destino = screen.getByLabelText("Destino") as HTMLSelectElement;
+    await within(destino).findByRole("option", { name: /Maria/ });
+
+    const grupos = destino.querySelectorAll("optgroup");
+    expect(grupos).toHaveLength(2);
+    expect(grupos[0].label).toBe("Minhas contas");
+    expect(grupos[1].label).toBe("Meus contatos");
+
+    expect(
+      within(grupos[0]).getByRole("option", { name: /Reserva/ }),
+    ).toBeInTheDocument();
+    expect(
+      within(grupos[1]).getByRole("option", { name: /Maria/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("trocar a origem devolve a conta anterior a lista de destinos", async () => {
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    const destino = screen.getByLabelText("Destino");
+    await within(destino).findByRole("option", { name: /Reserva/ });
+
+    await usuario.selectOptions(screen.getByLabelText("Conta de origem"), "conta-2");
+
+    expect(within(destino).getByRole("option", { name: /Principal/ })).toBeInTheDocument();
+    expect(
+      within(destino).queryByRole("option", { name: /Reserva/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("trocar a origem para a conta que era o destino limpa o destino, sem habilitar Enviar so com um valor", async () => {
+    // Round de correcao 1: o <option> do destino some do DOM quando a
+    // origem muda para a mesma conta, mas o ESTADO React (contatoId) nao se
+    // limpa sozinho. Sem este teste, o botao ficaria habilitavel com um
+    // destino fantasma == origem, e o envio bateria em SAME_ACCOUNT_TRANSFER
+    // por uma porta diferente da que o filtro deveria fechar.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    const destino = screen.getByLabelText("Destino");
+    await within(destino).findByRole("option", { name: /Reserva/ });
+    await usuario.selectOptions(destino, "conta-2");
+
+    // Troca a origem PARA a conta que estava escolhida como destino.
+    await usuario.selectOptions(screen.getByLabelText("Conta de origem"), "conta-2");
+
+    expect(destino).toHaveValue("");
+
+    await usuario.type(screen.getByLabelText("Valor"), "100.00");
+    expect(screen.getByRole("button", { name: "Enviar" })).toBeDisabled();
+  });
+
+  it("trocar a origem para uma terceira conta preserva o destino ja escolhido", async () => {
+    // Contraparte do teste acima: a limpeza precisa ser condicional. Uma
+    // limpeza incondicional a cada troca de origem destruiria a escolha do
+    // usuario sem motivo — e este teste falha se a correcao virar isso.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () =>
+        HttpResponse.json([conta, outraConta, terceiraConta]),
+      ),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    const destino = screen.getByLabelText("Destino");
+    await within(destino).findByRole("option", { name: /Reserva/ });
+    await usuario.selectOptions(destino, "conta-2");
+
+    // Troca a origem para uma conta QUE NAO E o destino escolhido.
+    await usuario.selectOptions(screen.getByLabelText("Conta de origem"), "conta-3");
+
+    expect(destino).toHaveValue("conta-2");
   });
 });

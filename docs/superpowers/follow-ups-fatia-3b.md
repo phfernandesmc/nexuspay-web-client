@@ -2,7 +2,7 @@
 
 ## Precisa sair antes da Fatia 4 (deploy)
 
-### O saldo disponível pode ficar maior que o real
+### O saldo disponível pode ficar maior que o real — fechado na Fatia 3d
 
 `src/features/statement/queries.ts` deriva o disponível somando as saídas
 `PENDING` das 100 transações mais recentes. `PENDING` não é necessariamente
@@ -14,6 +14,18 @@ aceita filtro por status.
 `AccountOut`. O cálculo já existe lá — `TransactionService.request_transfer`
 faz `balance - sum_pending_outgoing`. Um campo computado resolveria para
 qualquer cliente futuro.
+
+**Fechado na Fatia 3d.** O gateway passou a expor `pending_outgoing` — a soma
+crua das saídas `PENDING` da conta — em `AccountOut`, calculado no servidor
+para os quatro caminhos que devolvem esse objeto (abrir conta, listar,
+detalhe, renomear), com a escala normalizada na fonte para os quatro
+concordarem. O frontend calcula `disponível = balance − pending_outgoing` a
+partir desse número exato; `usePendentesDeSaida`, a consulta `limit=100` do
+extrato e a chave de cache dela foram removidos (`grep -rn
+"usePendentesDeSaida|extratoPendentes" src` não acha nada). O furo desta
+entrada — o disponível ficar maior que o real quando há mais de 100
+transações depois de uma pendência antiga — deixou de existir junto, porque
+a janela de 100 que o causava não existe mais.
 
 ## Dívida conhecida
 

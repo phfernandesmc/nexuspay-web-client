@@ -87,7 +87,8 @@
     "close": "Encerrar conta",
     "closeConfirm": "Encerrar esta conta? Ela sai da sua lista.",
     "save": "Salvar",
-    "closeConfirmButton": "Encerrar"
+    "closeConfirmButton": "Encerrar",
+    "available": "Disponível"
   },
   "statement": {
     "title": "Extrato",
@@ -153,6 +154,8 @@
     "send": "Enviar",
     "sending": "Enviando...",
     "available": "Disponível",
-    "overAvailable": "O valor é maior que o disponível calculado. Você pode enviar mesmo assim — quem decide é o servidor."
+    "overAvailable": "O valor é maior que o disponível calculado. Você pode enviar mesmo assim — quem decide é o servidor.",
+    "myAccounts": "Minhas contas",
+    "myContacts": "Meus contatos"
   }
 }

@@ -19,7 +19,6 @@ export const CHAVES = {
   contas: () => ["contas"] as const,
   conta: (id: string) => ["conta", id] as const,
   extrato: (contaId: string) => ["extrato", contaId] as const,
-  extratoPendentes: (contaId: string) => ["extrato-pendentes", contaId] as const,
   instituicoes: () => ["instituicoes"] as const,
   contatos: () => ["contatos"] as const,
   transacao: (id: string) => ["transacao", id] as const,
@@ -61,7 +60,6 @@ function invalidarConta(qc: ReturnType<typeof useQueryClient>, id: string) {
   void qc.invalidateQueries({ queryKey: CHAVES.contas() });
   void qc.invalidateQueries({ queryKey: CHAVES.conta(id) });
   void qc.invalidateQueries({ queryKey: CHAVES.extrato(id) });
-  void qc.invalidateQueries({ queryKey: CHAVES.extratoPendentes(id) });
 }
 
 export function useRenomearConta(id: string) {

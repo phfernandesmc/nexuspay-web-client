@@ -87,7 +87,8 @@
     "close": "Close account",
     "closeConfirm": "Close this account? It will leave your list.",
     "save": "Save",
-    "closeConfirmButton": "Close"
+    "closeConfirmButton": "Close",
+    "available": "Available"
   },
   "statement": {
     "title": "Statement",
@@ -153,6 +154,8 @@
     "send": "Send",
     "sending": "Sending...",
     "available": "Available",
-    "overAvailable": "The amount is higher than the calculated available balance. You can send anyway — the server decides."
+    "overAvailable": "The amount is higher than the calculated available balance. You can send anyway — the server decides.",
+    "myAccounts": "My accounts",
+    "myContacts": "My contacts"
   }
 }

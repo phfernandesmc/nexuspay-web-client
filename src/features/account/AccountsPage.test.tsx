@@ -22,6 +22,7 @@ const conta = {
   alias: "Salario",
   type: "CHECKING" as const,
   balance: "1234.56",
+  pending_outgoing: "0.00",
   status: "ACTIVE" as const,
   institution: instituicao,
   created_at: "2026-03-09T14:30:00Z",
@@ -111,5 +112,38 @@ describe("lista de contas", () => {
 
     await waitFor(() => expect(screen.getByText(/1,234\.56/)).toBeInTheDocument());
     expect(chamadas).toBe(1);
+  });
+
+  it("o cartao mostra saldo E disponivel quando ha saida pendente", async () => {
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () =>
+        HttpResponse.json([{ ...conta, balance: "500.00", pending_outgoing: "100.00" }]),
+      ),
+    );
+
+    montar();
+
+    expect(await screen.findByText(/500,00/)).toBeInTheDocument();
+    expect(screen.getByText(/400,00/)).toBeInTheDocument();
+    expect(screen.getByText(/Dispon[ií]vel/)).toBeInTheDocument();
+  });
+
+  it("o cartao mostra so o saldo quando nao ha saida pendente", async () => {
+    // Sem pendencia os dois numeros sao iguais, e repetir o mesmo valor
+    // duas vezes e ruido.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () =>
+        HttpResponse.json([{ ...conta, balance: "500.00", pending_outgoing: "0.00" }]),
+      ),
+    );
+
+    montar();
+
+    // Espera pelo cartao pelo testid, nao pelo valor: com a mutacao
+    // pending_outgoing >= 0 o saldo e o disponivel viram o mesmo texto
+    // "R$ 500,00" duplicado, e findByText(/500,00/) estouraria por
+    // ambiguidade antes mesmo de chegar na asserção que importa aqui.
+    await screen.findByTestId(`conta-${conta.id}`);
+    expect(screen.queryByText(/Dispon[ií]vel/)).not.toBeInTheDocument();
   });
 });

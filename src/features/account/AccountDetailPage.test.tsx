@@ -23,12 +23,15 @@ const conta = {
   alias: "Salario",
   type: "CHECKING" as const,
   balance: "500.00",
+  pending_outgoing: "0.00",
   status: "ACTIVE" as const,
   institution: instituicao,
   created_at: "2026-03-09T14:30:00Z",
 };
 
 const extratoVazio = { items: [], next_cursor: null };
+
+const contaComPendente = { ...conta, pending_outgoing: "150.55" };
 
 function montar() {
   return envolverComQuery(
@@ -149,6 +152,29 @@ describe("detalhe da conta", () => {
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
 
     expect(await screen.findByText("Reserva")).toBeInTheDocument();
+  });
+
+  it("mostra a linha de processamento quando ha saida pendente", async () => {
+    // Unico ponto de integracao do criterio 10 do spec: prova que
+    // AccountDetailPage de fato fia `conta.pending_outgoing` para
+    // PendingBalanceLine. O fixture padrao deste arquivo tem pendente zero,
+    // entao a linha de processamento nunca renderiza nos outros testes desta
+    // pagina — trocar a prop por um literal fixo ("0.00") passaria despercebido
+    // sem este teste.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts/${conta.id}`, () =>
+        HttpResponse.json(contaComPendente),
+      ),
+    );
+    montar();
+
+    await screen.findByRole("button", { name: "Encerrar conta" });
+
+    // Regex, nao texto exato: dt e dd sao nos irmaos e getNodeText concatena
+    // rotulo com valor, o que deixaria uma asserção de texto exato inerte.
+    expect(screen.getByText(/150,55/)).toBeInTheDocument();
+    // Disponivel = 500,00 (saldo) - 150,55 (pendente) = 349,45.
+    expect(screen.getByText(/349,45/)).toBeInTheDocument();
   });
 
   it("conta de outro usuario diz nao encontrada, nunca sem permissao", async () => {

@@ -22,6 +22,7 @@ const conta = {
   alias: "Salario",
   type: "CHECKING" as const,
   balance: "500.00",
+  pending_outgoing: "0.00",
   status: "ACTIVE" as const,
   institution: instituicao,
   created_at: "2026-03-09T14:30:00Z",
@@ -49,7 +50,6 @@ describe("consultas de conta", () => {
     expect(CHAVES.contas()).toEqual(["contas"]);
     expect(CHAVES.conta("x")).toEqual(["conta", "x"]);
     expect(CHAVES.extrato("x")).toEqual(["extrato", "x"]);
-    expect(CHAVES.extratoPendentes("x")).toEqual(["extrato-pendentes", "x"]);
     expect(CHAVES.instituicoes()).toEqual(["instituicoes"]);
   });
 

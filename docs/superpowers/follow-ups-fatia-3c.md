@@ -1,6 +1,6 @@
 # Follow-ups da Fatia 3c
 
-## Não existe caminho na interface para transferir entre contas do próprio usuário
+## Não existe caminho na interface para transferir entre contas do próprio usuário — fechado na Fatia 3d
 
 Descoberto ao tentar escrever o e2e de transferência da onda de reparos da
 review final: `POST /contacts/lookup` recusa qualquer conta que pertença ao
@@ -20,6 +20,17 @@ Resolver exige uma decisão de produto que mexe no gateway (outro
 repositório, outra fatia): ou um endpoint de busca que aceite conta
 própria do requisitante, ou um seletor de "minhas contas" no formulário de
 transferência que dispense o lookup por instituição/agência/número.
+
+**Fechado na Fatia 3d, e o desfecho é notável: o gateway nunca mudou.** A
+rota de transferência em si sempre aceitou uma conta própria como destino —
+o que ela valida é só que o destino existe e não está encerrado, sem
+nenhuma checagem de dono. A única barreira era `POST /contacts/lookup`,
+usada para *achar* esse destino. A correção foi inteiramente de descoberta
+na interface: a `TransferPage` ganhou um seletor de "minhas contas" que
+dispensa o lookup por instituição/agência/número, então o caminho passa a
+existir sem tocar em `is_between_own_accounts`, em `CONTACT_OWN_ACCOUNT` ou
+em nenhuma outra regra do domínio. Quem procurar uma mudança de gateway
+aqui não vai achar nenhuma — não houve.
 
 ## O e2e de transferência não é executável nesta fatia: exige o worker, e o worker é perigoso de subir localmente
 
@@ -58,7 +69,7 @@ Fechar isto exige uma fila de desenvolvimento separada da de produção — que
 é assunto da Fatia 4, junto com a separação já registrada no follow-up "O
 e2e desta fatia publica na fila SQS compartilhada".
 
-## Expor o saldo disponível no gateway
+## Expor o saldo disponível no gateway — fechado na Fatia 3d
 
 Herdado da 3b e ainda aberto. O disponível continua derivado no cliente, com
 o furo do `limit=100` declarado na §6 do spec da 3b: quando há mais de 100
@@ -66,6 +77,13 @@ transações depois de uma pendência antiga, o número exibido fica **maior**
 que o real. Na 3c isso passou a alimentar o aviso não-bloqueante da
 transferência, então o aviso pode não aparecer quando deveria. A correção é
 expor o campo no `AccountOut`.
+
+**Fechado na Fatia 3d.** `AccountOut` ganhou `pending_outgoing`, calculado
+no gateway para os quatro caminhos que devolvem esse objeto, com escala
+normalizada na fonte. O frontend passou a calcular `disponível = balance −
+pending_outgoing` a partir desse número exato, e o furo do `limit=100`
+deixou de existir porque a consulta que o causava foi removida. Detalhe
+completo em `docs/superpowers/follow-ups-fatia-3b.md`.
 
 ## O e2e desta fatia publica na fila SQS compartilhada
 

@@ -46,7 +46,7 @@ export default function AccountDetailPage() {
       <p className="mt-4 text-3xl font-semibold">
         {formatarDinheiro(paraCentavos(conta.balance), locale)}
       </p>
-      <PendingBalanceLine contaId={conta.id} saldo={conta.balance} />
+      <PendingBalanceLine saldo={conta.balance} pendente={conta.pending_outgoing} />
 
       <div className="mt-4 flex gap-2">
         <Button variant="outline" onClick={() => setRenomeando(true)}>
