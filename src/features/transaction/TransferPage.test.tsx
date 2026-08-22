@@ -32,6 +32,13 @@ const outraConta = {
   alias: "Reserva",
 };
 
+const terceiraConta = {
+  ...conta,
+  id: "conta-3",
+  number: "11122233",
+  alias: "Viagem",
+};
+
 const contato = {
   id: "contato-1",
   alias: "Maria",
@@ -569,5 +576,54 @@ describe("transferencia", () => {
     expect(
       within(destino).queryByRole("option", { name: /Reserva/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it("trocar a origem para a conta que era o destino limpa o destino, sem habilitar Enviar so com um valor", async () => {
+    // Round de correcao 1: o <option> do destino some do DOM quando a
+    // origem muda para a mesma conta, mas o ESTADO React (contatoId) nao se
+    // limpa sozinho. Sem este teste, o botao ficaria habilitavel com um
+    // destino fantasma == origem, e o envio bateria em SAME_ACCOUNT_TRANSFER
+    // por uma porta diferente da que o filtro deveria fechar.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    const destino = screen.getByLabelText("Destino");
+    await within(destino).findByRole("option", { name: /Reserva/ });
+    await usuario.selectOptions(destino, "conta-2");
+
+    // Troca a origem PARA a conta que estava escolhida como destino.
+    await usuario.selectOptions(screen.getByLabelText("Conta de origem"), "conta-2");
+
+    expect(destino).toHaveValue("");
+
+    await usuario.type(screen.getByLabelText("Valor"), "100.00");
+    expect(screen.getByRole("button", { name: "Enviar" })).toBeDisabled();
+  });
+
+  it("trocar a origem para uma terceira conta preserva o destino ja escolhido", async () => {
+    // Contraparte do teste acima: a limpeza precisa ser condicional. Uma
+    // limpeza incondicional a cada troca de origem destruiria a escolha do
+    // usuario sem motivo — e este teste falha se a correcao virar isso.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () =>
+        HttpResponse.json([conta, outraConta, terceiraConta]),
+      ),
+    );
+
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    const destino = screen.getByLabelText("Destino");
+    await within(destino).findByRole("option", { name: /Reserva/ });
+    await usuario.selectOptions(destino, "conta-2");
+
+    // Troca a origem para uma conta QUE NAO E o destino escolhido.
+    await usuario.selectOptions(screen.getByLabelText("Conta de origem"), "conta-3");
+
+    expect(destino).toHaveValue("conta-2");
   });
 });

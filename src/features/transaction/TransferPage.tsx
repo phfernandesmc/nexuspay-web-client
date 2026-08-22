@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,20 @@ export default function TransferPage() {
   const acimaDoDisponivel =
     disponivelCentavos !== null && valorCentavos !== null && valorCentavos > disponivelCentavos;
 
+  // Trocar a origem para a conta que estava escolhida como destino faz a
+  // <option> sumir do select de destino (filtrado pela origem), mas o
+  // DOM sumir nao limpa o estado React sozinho: contatoId continuaria
+  // "conta-2", o botao ficaria habilitavel, e o envio mandaria origem ==
+  // destino — exatamente o erro que o filtro deveria eliminar por
+  // construcao (SAME_ACCOUNT_TRANSFER por outra porta).
+  function aoTrocarOrigem(evento: ChangeEvent<HTMLSelectElement>) {
+    const novaOrigemId = evento.target.value;
+    setOrigemId(novaOrigemId);
+    if (novaOrigemId !== "" && novaOrigemId === contatoId) {
+      setContatoId("");
+    }
+  }
+
   async function aoEnviar() {
     setErro(null);
     try {
@@ -109,7 +124,7 @@ export default function TransferPage() {
           id="transferencia-origem"
           className="rounded border px-2 py-1"
           value={origemId}
-          onChange={(evento) => setOrigemId(evento.target.value)}
+          onChange={aoTrocarOrigem}
         >
           <option value="" />
           {(contas ?? []).map((conta) => (
