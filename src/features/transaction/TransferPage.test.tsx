@@ -229,8 +229,9 @@ describe("transferencia", () => {
     await escolherOrigem(usuario);
     await usuario.click(screen.getByRole("button", { name: "Buscar outra conta" }));
 
-    await screen.findByRole("option", { name: instituicao.name });
-    await usuario.selectOptions(screen.getByLabelText("Instituição"), instituicao.id);
+    await screen.findByTestId(`instituicao-${instituicao.id}`);
+    // O banco virou escolha por logo; o caminho mudou, as provas nao.
+    await usuario.click(screen.getByTestId(`instituicao-${instituicao.id}`));
     await usuario.type(screen.getByLabelText("Agência"), "0003");
     // Formato real do gateway: ^\\d{8}-\\d$. "99999999" passava porque o MSW
     // responde sem validar — o mock escondia o contrato.
@@ -752,5 +753,61 @@ describe("transferencia", () => {
 
     expect(screen.queryByLabelText("Agência")).toBeNull();
     expect(screen.getByRole("button", { name: "Buscar outra conta" })).toBeInTheDocument();
+  });
+
+  it("limpar tudo devolve o formulario ao estado inicial", async () => {
+    // Precisa zerar TRES coisas, nao so o campo visivel: origem, destino e
+    // valor. Um "limpar" que deixasse a origem marcada faria o proximo
+    // preenchimento partir de um estado que o usuario acha que descartou.
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    await escolherDestino(usuario, contato.id);
+    await usuario.type(screen.getByLabelText("Valor"), "100.00");
+    expect(botaoDeEnvio()).toBeEnabled();
+
+    await usuario.click(screen.getByRole("button", { name: "Limpar tudo" }));
+
+    expect(screen.getByLabelText("Valor")).toHaveValue("");
+    expect(screen.getByTestId(`origem-${conta.id}`)).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByTestId(`destino-${contato.id}`)).toHaveAttribute("aria-checked", "false");
+    expect(botaoDeEnvio()).toBeDisabled();
+  });
+
+  it("o valor aparece formatado enquanto se digita", async () => {
+    // Comportamento de caixa eletronico: os digitos entram pela direita.
+    // O que o usuario ve e a moeda formatada; o que vai ao gateway continua
+    // sendo a string decimal canonica, provado pelas assercoes de payload.
+    montar();
+    const usuario = userEvent.setup();
+    const campo = screen.getByLabelText("Valor");
+
+    // O Intl do pt-BR separa o simbolo do numero com espaco NAO SEPARAVEL
+    // (U+00A0), nao com espaco comum. Comparar com " " falha exibindo duas
+    // strings que parecem identicas no terminal — normalizar aqui deixa a
+    // intencao visivel em vez de esconder o detalhe num regex.
+    const visivel = () => (campo as HTMLInputElement).value.replace(/\u00a0/g, " ");
+
+    await usuario.type(campo, "5077");
+    expect(visivel()).toBe("R$ 50,77");
+
+    await usuario.type(campo, "0");
+    expect(visivel()).toBe("R$ 507,70");
+  });
+
+  it("valor zerado NAO habilita o envio", async () => {
+    // A condicao de completude olhava string vazia, e "0.00" nao e vazia.
+    // O indicador de etapas ja exigia > 0, entao a etapa aparecia pendente e
+    // o botao habilitado ao mesmo tempo. O gateway recusa (Amount tem gt=0),
+    // mas o usuario levava um 422 generico em vez de simplesmente nao poder
+    // clicar.
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    await escolherDestino(usuario, contato.id);
+
+    await usuario.type(screen.getByLabelText("Valor"), "0");
+
+    expect(botaoDeEnvio()).toBeDisabled();
   });
 });

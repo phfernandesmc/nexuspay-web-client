@@ -244,8 +244,8 @@ describe("lista de contatos", () => {
     const usuario = userEvent.setup();
     await usuario.click(screen.getByRole("button", { name: "Adicionar contato" }));
 
-    await screen.findByRole("option", { name: instituicao.name });
-    await usuario.selectOptions(screen.getByLabelText("Instituição"), instituicao.id);
+    await screen.findByTestId(`instituicao-${instituicao.id}`);
+    await usuario.click(screen.getByTestId(`instituicao-${instituicao.id}`));
     await usuario.type(screen.getByLabelText("Agência"), "0001");
     await usuario.type(screen.getByLabelText("Número da conta"), "12345678-9");
     await usuario.click(screen.getByRole("button", { name: "Buscar" }));

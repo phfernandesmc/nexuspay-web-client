@@ -186,7 +186,8 @@
     "suggested": "Suggested",
     "searchContact": "Search contact",
     "searchPlaceholder": "Search...",
-    "noMatch": "No contact found"
+    "noMatch": "No contact found",
+    "clearAll": "Clear all"
   },
   "landing": {
     "nav": {

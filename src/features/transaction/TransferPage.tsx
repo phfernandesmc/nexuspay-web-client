@@ -16,7 +16,12 @@ import TransferSteps from "@/features/transaction/TransferSteps";
 import { useChaveDeIntencao } from "@/features/transaction/idempotency";
 import { useTransferir } from "@/features/transaction/queries";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
-import { formatarDinheiro, paraCentavos } from "@/lib/money";
+import {
+  centavosDeDigitos,
+  centavosParaDecimal,
+  formatarDinheiro,
+  paraCentavos,
+} from "@/lib/money";
 
 export default function TransferPage() {
   const { t, i18n } = useTranslation(["transaction", "contact", "errors"]);
@@ -95,6 +100,23 @@ export default function TransferPage() {
   // "conta-2", o botao ficaria habilitavel, e o envio mandaria origem ==
   // destino — exatamente o erro que o filtro deveria eliminar por
   // construcao (SAME_ACCOUNT_TRANSFER por outra porta).
+  /**
+   * Zera TUDO, nao so o campo visivel.
+   *
+   * Deixar a origem marcada faria o proximo preenchimento partir de um
+   * estado que o usuario acha que descartou — e a origem e justamente a
+   * escolha que ele nao ve depois de rolar a pagina.
+   */
+  function limparTudo() {
+    setOrigemId("");
+    setContatoId("");
+    setValor("");
+    setBusca("");
+    setAchada(null);
+    setBuscando(false);
+    setErro(null);
+  }
+
   async function aoEnviar() {
     setErro(null);
     setConfirmando(false);
@@ -116,7 +138,13 @@ export default function TransferPage() {
     }
   }
 
-  const incompleto = origemId === "" || destinoId === "" || valor.trim() === "";
+  // valorCentavos, e nao string vazia: "0.00" nao e vazia, e a checagem
+  // antiga habilitava o envio de uma transferencia de zero. O gateway
+  // recusa (Amount tem gt=0), mas o usuario levava um 422 generico em vez de
+  // simplesmente nao poder clicar — e o indicador de etapas ja dizia
+  // "pendente" enquanto o botao dizia "pode enviar".
+  const incompleto =
+    origemId === "" || destinoId === "" || valorCentavos === null || valorCentavos <= 0;
 
   // A falha de rede nao pode se disfarcar de "voce nao tem contas": o select
   // vazio e "voce nao tem contas" renderizam identico, e sem uma conta de
@@ -231,7 +259,11 @@ export default function TransferPage() {
           <div
             role="radiogroup"
             aria-label={t("transaction:destination")}
-            className="flex max-h-64 flex-col gap-1 overflow-y-auto"
+            // p-1 pelo mesmo motivo do carrossel de origem: o anel de
+            // selecao e desenhado FORA do item e overflow-y-auto corta o que
+            // passa dos limites — sem o respiro, o anel aparece cortado nas
+            // laterais e no primeiro e no ultimo da lista.
+            className="flex max-h-64 flex-col gap-1 overflow-y-auto p-1"
           >
             {contatosVisiveis.map((contato) => {
               const marcado = contato.id === contatoId;
@@ -290,19 +322,10 @@ export default function TransferPage() {
         <div className="flex flex-col gap-2 rounded-xl border p-4">
           <p className="text-sm font-medium">{t("transaction:manualEntry")}</p>
           {buscando ? (
-            <>
-              <AccountLookup onEncontrada={setAchada} />
-              {/* Sem isto a insercao manual e caminho so de ida: quem clicou
-                  por engano fica com o formulario de agencia e numero aberto
-                  e nenhuma forma de voltar aos contatos. */}
-              <Button
-                variant="ghost"
-                className="rounded-full"
-                onClick={() => setBuscando(false)}
-              >
-                {t("contact:cancel")}
-              </Button>
-            </>
+            /* Sem o cancelar a insercao manual e caminho so de ida: quem
+               clicou por engano fica com o formulario aberto e nenhuma forma
+               de voltar aos contatos. */
+            <AccountLookup onEncontrada={setAchada} aoCancelar={() => setBuscando(false)} />
           ) : (
             <Button variant="outline" onClick={() => setBuscando(true)}>
               {t("transaction:newAccount")}
@@ -327,14 +350,52 @@ export default function TransferPage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="transferencia-valor">{t("transaction:value")}</Label>
-        <Input
-          id="transferencia-valor"
-          inputMode="decimal"
-          value={valor}
-          onChange={(evento) => setValor(evento.target.value)}
-        />
+      {/* Valor e acao na mesma linha: o campo esticado na largura da pagina
+          sugeria um texto longo, quando o conteudo sao poucos digitos. */}
+      <div className="flex flex-wrap items-end gap-3">
+        {/* w-56: a mesma largura dos cartoes de conta, para a coluna do
+            valor alinhar com o carrossel acima. */}
+        <div className="flex w-56 flex-col gap-2">
+          <Label htmlFor="transferencia-valor">{t("transaction:value")}</Label>
+          {/* O ESTADO continua sendo a string decimal canonica ("100.00"):
+              e ela que vai no payload e que alimenta a chave de
+              idempotencia. A mascara e so o que se ve — guardar o texto
+              formatado faria a chave mudar com a pontuacao e o payload
+              chegar no formato errado ao gateway. */}
+          <Input
+            id="transferencia-valor"
+            inputMode="numeric"
+            className="text-lg"
+            placeholder={formatarDinheiro(0, i18n.language)}
+            value={
+              valorCentavos === null ? "" : formatarDinheiro(valorCentavos, i18n.language)
+            }
+            onChange={(evento) => {
+              const centavos = centavosDeDigitos(evento.target.value);
+              setValor(centavos === null ? "" : centavosParaDecimal(centavos));
+            }}
+          />
+        </div>
+
+        {/* O botao NAO desabilita por causa do disponivel: quem decide e o servidor. */}
+        <Button
+          className="rounded-full bg-gradient-to-r from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] px-8 text-white"
+          onClick={() => setConfirmando(true)}
+          disabled={incompleto || transferir.isPending}
+        >
+          {t("transaction:continue")}
+        </Button>
+
+        {/* Vermelho so no hover: descartar o preenchimento e reversivel
+            refazendo, mas nao merece parecer uma acao neutra ao lado da
+            acao principal. */}
+        <Button
+          variant="ghost"
+          className="rounded-full hover:bg-destructive/10 hover:text-destructive"
+          onClick={limparTudo}
+        >
+          {t("transaction:clearAll")}
+        </Button>
       </div>
 
       {acimaDoDisponivel && (
@@ -348,15 +409,6 @@ export default function TransferPage() {
           <AlertDescription>{erro}</AlertDescription>
         </Alert>
       )}
-
-      {/* O botao NAO desabilita por causa do disponivel: quem decide e o servidor. */}
-      <Button
-        className="rounded-full bg-gradient-to-r from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] text-white"
-        onClick={() => setConfirmando(true)}
-        disabled={incompleto || transferir.isPending}
-      >
-        {t("transaction:continue")}
-      </Button>
 
       {/* A revisao antes de mover dinheiro. A chave de idempotencia nasce de
           (origem, destino, valor) e nenhum dos tres muda enquanto isto esta

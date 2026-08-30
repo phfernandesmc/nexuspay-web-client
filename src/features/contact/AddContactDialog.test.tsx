@@ -37,8 +37,9 @@ beforeEach(async () => {
 
 async function preencherBusca() {
   const usuario = userEvent.setup();
-  await screen.findByRole("option", { name: instituicao.name });
-  await usuario.selectOptions(screen.getByLabelText("Instituição"), instituicao.id);
+  await screen.findByTestId(`instituicao-${instituicao.id}`);
+  // O banco virou escolha por logo; o caminho mudou, as provas nao.
+    await usuario.click(screen.getByTestId(`instituicao-${instituicao.id}`));
   await usuario.type(screen.getByLabelText("Agência"), "0001");
   // Numero no formato que o gateway exige (^\\d{8}-\\d$). A fixture usava
   // "12345678", sem hifen nem digito verificador — invalido de verdade, e
@@ -221,8 +222,9 @@ describe("adicionar contato", () => {
     envolverComQuery(<AddContactDialog aberto onFechar={() => {}} />);
 
     const usuario = userEvent.setup();
-    await screen.findByRole("option", { name: instituicao.name });
-    await usuario.selectOptions(screen.getByLabelText("Instituição"), instituicao.id);
+    await screen.findByTestId(`instituicao-${instituicao.id}`);
+    // O banco virou escolha por logo; o caminho mudou, as provas nao.
+    await usuario.click(screen.getByTestId(`instituicao-${instituicao.id}`));
     await usuario.type(screen.getByLabelText("Agência"), "0001");
     await usuario.type(screen.getByLabelText("Número da conta"), "12345678");
     await usuario.click(screen.getByRole("button", { name: "Buscar" }));

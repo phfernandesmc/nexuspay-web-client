@@ -186,7 +186,8 @@
     "suggested": "Sugeridos",
     "searchContact": "Buscar contato",
     "searchPlaceholder": "Buscar...",
-    "noMatch": "Nenhum contato encontrado"
+    "noMatch": "Nenhum contato encontrado",
+    "clearAll": "Limpar tudo"
   },
   "landing": {
     "nav": {
