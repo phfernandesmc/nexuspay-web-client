@@ -5,6 +5,7 @@ import { useSessionBootstrap } from "@/features/auth/useSessionBootstrap";
 import LoginPage from "@/features/auth/LoginPage";
 import RegisterPage from "@/features/auth/RegisterPage";
 import HomePage from "@/pages/HomePage";
+import LandingPage from "@/features/landing/LandingPage";
 import AppShell from "@/components/layout/AppShell";
 import AccountsPage from "@/features/account/AccountsPage";
 import AccountDetailPage from "@/features/account/AccountDetailPage";
@@ -21,6 +22,7 @@ function TelaDeCarga() {
 export default function Router() {
   useSessionBootstrap();
   const status = useSession((estado) => estado.status);
+  const sessaoEncerrada = useSession((estado) => estado.sessaoEncerrada);
 
   // Enquanto o refresh silencioso nao responder, nao existe resposta certa
   // para "esta autenticado?" — e chutar que nao faz o login piscar.
@@ -47,7 +49,11 @@ export default function Router() {
                 <HomePage />
               </AppShell>
             ) : (
-              <Navigate to="/login" replace />
+              // A raiz e publica: quem chega sem sessao ve a landing. Mas
+              // quem ACABOU de sair vai para o login, que e onde o motivo do
+              // encerramento aparece — cair na landing apagaria a explicacao
+              // de um REFRESH_TOKEN_REUSED. As demais rotas seguem protegidas.
+              sessaoEncerrada ? <Navigate to="/login" replace /> : <LandingPage />
             )
           }
         />

@@ -157,5 +157,53 @@
     "overAvailable": "O valor é maior que o disponível calculado. Você pode enviar mesmo assim — quem decide é o servidor.",
     "myAccounts": "Minhas contas",
     "myContacts": "Meus contatos"
+  },
+  "landing": {
+    "nav": {
+      "architecture": "Arquitetura",
+      "security": "Segurança",
+      "stack": "Stack",
+      "demo": "Acessar Demo",
+      "menu": "Abrir menu"
+    },
+    "hero": {
+      "title": "Banking movido a eventos",
+      "subtitle": "Arquitetura moderna para o futuro financeiro.",
+      "illustrationAlt": "Ilustração abstrata de fluxos de dados em gradiente"
+    },
+    "architecture": {
+      "title": "Arquitetura",
+      "gateway": "Gateway",
+      "gatewayRole": "API",
+      "queue": "AWS SQS",
+      "queueRole": "FIFO",
+      "worker": "Java",
+      "workerRole": "Worker",
+      "note": "O gateway e o worker nunca conversam por HTTP: a fila é o único caminho entre eles."
+    },
+    "guarantees": {
+      "idempotency": "Idempotência",
+      "idempotencyDesc": "O worker lê o status antes de agir e descarta o que já não está pendente. Uma mensagem entregue duas vezes não move dinheiro duas vezes.",
+      "durability": "Durabilidade",
+      "durabilityDesc": "As mensagens ficam persistidas na fila. Uma publicação que falha é reencontrada pela varredura e republicada; o que falha de vez vai para a fila de mortos."
+    },
+    "security": {
+      "title": "Segurança",
+      "tokens": "Token de acesso só em memória",
+      "tokensDesc": "Quinze minutos de validade e nunca no localStorage. O refresh vive num cookie httpOnly, rotacionado a cada uso.",
+      "reuse": "Reuso revoga tudo",
+      "reuseDesc": "Um refresh token já usado derruba todas as sessões daquele usuário — é assim que roubo de token vira prejuízo zero.",
+      "hashing": "Senhas com Argon2",
+      "hashingDesc": "E CORS restrito a origens explícitas, sem curinga, com rate limit por endpoint."
+    },
+    "stack": {
+      "title": "Stack Tecnológica"
+    },
+    "footer": {
+      "frontend": "GitHub Front-end",
+      "gateway": "GitHub Gateway",
+      "worker": "GitHub Worker",
+      "demoHint": "Entre com joao@example.com / senha123"
+    }
   }
 }

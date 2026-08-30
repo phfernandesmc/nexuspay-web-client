@@ -52,7 +52,25 @@ describe("roteamento", () => {
     await waitFor(() => expect(screen.getByRole("heading", { name: "Início" })).toBeInTheDocument());
   });
 
-  it("sem sessao leva ao login", async () => {
+  it("sem sessao a raiz mostra a landing, nao o login", async () => {
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/auth/refresh`, () =>
+        HttpResponse.json({ error: { code: "INVALID_TOKEN", message: "x", details: {} } }, { status: 401 }),
+      ),
+    );
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", { name: /movido a eventos/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("sem sessao uma rota protegida continua indo ao login", async () => {
+    // A raiz deixou de redirecionar quando a landing entrou. A protecao das
+    // rotas internas nao pode ter ido junto: sem este teste, a troca acima
+    // teria removido em silencio a unica prova de que /contas exige sessao.
+    window.history.pushState({}, "", "/contas");
     servidor.use(
       mswHttp.post(`${URL_TESTE}/auth/refresh`, () =>
         HttpResponse.json({ error: { code: "INVALID_TOKEN", message: "x", details: {} } }, { status: 401 }),

@@ -25,6 +25,16 @@ type EstadoSessao = {
    * roubo de token.
    */
   motivoEncerramento: string | null;
+  /**
+   * Verdadeiro quando a sessao ACABOU, falso quando nunca existiu.
+   *
+   * Os dois casos viram status "anonymous", mas pedem telas diferentes na
+   * raiz: quem nunca entrou ve a landing publica; quem acabou de sair — pelo
+   * botao ou por REFRESH_TOKEN_REUSED — vai para o login, que e onde
+   * motivoEncerramento e exibido. Sem esta distincao, uma sessao derrubada
+   * por reuso de token cai na landing e a explicacao se perde.
+   */
+  sessaoEncerrada: boolean;
   autenticar: (token: string, user: Usuario) => void;
   definirToken: (token: string) => void;
   encerrar: (motivo?: string) => void;
@@ -48,14 +58,33 @@ export const useSession = create<EstadoSessao>((set) => ({
   user: null,
   status: "booting",
   motivoEncerramento: null,
+  sessaoEncerrada: false,
   autenticar: (accessToken, user) =>
-    set({ accessToken, user, status: "authenticated", motivoEncerramento: null }),
+    set({
+      accessToken,
+      user,
+      status: "authenticated",
+      motivoEncerramento: null,
+      sessaoEncerrada: false,
+    }),
   definirToken: (accessToken) => set({ accessToken }),
   // Sair pelo botao nao tem motivo: o usuario sabe por que esta no login.
   encerrar: (motivo) =>
-    set({ accessToken: null, user: null, status: "anonymous", motivoEncerramento: motivo ?? null }),
+    set({
+      accessToken: null,
+      user: null,
+      status: "anonymous",
+      motivoEncerramento: motivo ?? null,
+      sessaoEncerrada: true,
+    }),
   marcarAnonimo: () =>
-    set({ accessToken: null, user: null, status: "anonymous", motivoEncerramento: null }),
+    set({
+      accessToken: null,
+      user: null,
+      status: "anonymous",
+      motivoEncerramento: null,
+      sessaoEncerrada: false,
+    }),
   limparMotivoEncerramento: () => set({ motivoEncerramento: null }),
 }));
 

@@ -49,6 +49,13 @@
 }
 
 :root {
+    /* Marca da landing: roxo -> magenta -> laranja. Tokens, e nao classes
+       soltas, para que o resto do app possa adotar a mesma identidade sem
+       cacar hexadecimais espalhados. */
+    --marca-1: oklch(0.55 0.24 295);
+    --marca-2: oklch(0.60 0.25 340);
+    --marca-3: oklch(0.70 0.19 45);
+    --marca-suave: oklch(0.97 0.02 300);
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
@@ -84,6 +91,12 @@
 }
 
 .dark {
+    /* No escuro os tons sobem em luminosidade: os mesmos matizes a 0.55
+       somem contra um fundo oklch(0.145) e falham no contraste AA. */
+    --marca-1: oklch(0.68 0.21 295);
+    --marca-2: oklch(0.72 0.21 340);
+    --marca-3: oklch(0.78 0.16 45);
+    --marca-suave: oklch(0.25 0.04 300);
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
