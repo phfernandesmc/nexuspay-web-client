@@ -100,7 +100,8 @@
     "save": "Save",
     "closeConfirmButton": "Close",
     "available": "Available",
-    "totalBalance": "Total balance"
+    "totalBalance": "Total balance",
+    "backToList": "All accounts"
   },
   "statement": {
     "title": "Statement",

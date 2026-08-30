@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Archive, Pencil } from "lucide-react";
+import { Archive, ArrowLeft, Pencil } from "lucide-react";
 import BankCard from "@/features/institution/BankCard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useConta } from "@/features/account/queries";
@@ -37,6 +37,21 @@ export default function AccountDetailPage() {
 
   return (
     <section className="flex flex-col gap-6">
+      {/* Link, nao botao: ele NAVEGA, e trocar por <Button onClick> tiraria
+          role="link", Ctrl+clique e abrir em nova aba — some so para quem
+          nao usa mouse, entao ha teste.
+
+          "Todas as contas", e nao "Contas": a barra lateral ja tem um
+          "Contas", e dois links de mesmo nome na mesma pagina obrigam quem
+          navega por leitor de tela a adivinhar qual e qual. */}
+      <Link
+        to="/contas"
+        className="flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft aria-hidden="true" className="size-4" />
+        {t("account:backToList")}
+      </Link>
+
       {/* O mesmo cartao da lista de contas: a conta se parece consigo mesma
           nas duas telas em que aparece. O apelido continua sendo o h1 da
           pagina — o titulo dentro do cartao e quem da o nome ao documento

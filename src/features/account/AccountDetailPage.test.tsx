@@ -192,4 +192,20 @@ describe("detalhe da conta", () => {
     expect(alerta).toHaveTextContent("Conta não encontrada.");
     expect(alerta.textContent).not.toMatch(/permiss|autoriz/i);
   });
+
+  it("tem um LINK de volta para a lista de contas", async () => {
+    // Link, nao botao: ele navega, e precisa de role="link" para leitor de
+    // tela e para Ctrl+clique e abrir em nova aba funcionarem.
+    //
+    // O nome e "Todas as contas", nao "Contas": a barra lateral ja tem um
+    // "Contas", e dois links com o mesmo nome na mesma pagina obrigam quem
+    // navega por leitor de tela a adivinhar qual e qual.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts/${conta.id}`, () => HttpResponse.json(conta)),
+    );
+    montar();
+
+    const voltar = await screen.findByRole("link", { name: "Todas as contas" });
+    expect(voltar).toHaveAttribute("href", "/contas");
+  });
 });

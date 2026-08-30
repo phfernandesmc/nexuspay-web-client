@@ -100,7 +100,8 @@
     "save": "Salvar",
     "closeConfirmButton": "Encerrar",
     "available": "Disponível",
-    "totalBalance": "Saldo total"
+    "totalBalance": "Saldo total",
+    "backToList": "Todas as contas"
   },
   "statement": {
     "title": "Extrato",
