@@ -138,13 +138,38 @@ beforeEach(async () => {
   );
 });
 
-async function escolherOrigem(usuario: ReturnType<typeof userEvent.setup>) {
+type Usuario = ReturnType<typeof userEvent.setup>;
+
+/**
+ * As tres interacoes da tela passam por aqui, e as assercoes NAO.
+ *
+ * A tela vai mudar de forma — carrossel no lugar do select, confirmacao
+ * antes de enviar — e sem esta camada cada mudanca visual reescreveria as
+ * mesmas 19 provas. Concentrando o caminho, uma mudanca de forma toca um
+ * helper; se alguma asserção precisar mudar, e sinal de que o COMPORTAMENTO
+ * mudou, e isso merece conversa, nao ajuste.
+ */
+async function escolherOrigem(usuario: Usuario, id: string = conta.id) {
   // Escopado ao select de origem: antes de uma origem ser escolhida, o
   // destino tambem lista "Principal" entre as contas proprias (nada foi
   // excluido ainda), entao um findByRole global neste nome fica ambiguo.
   const origem = screen.getByLabelText("Conta de origem");
   await within(origem).findByRole("option", { name: /Principal/ });
-  await usuario.selectOptions(origem, conta.id);
+  await usuario.selectOptions(origem, id);
+}
+
+async function escolherDestino(usuario: Usuario, id: string) {
+  await usuario.selectOptions(screen.getByLabelText("Destino"), id);
+}
+
+/** O botao que dispara a transferencia. Usado tambem pelas assercoes de
+ *  habilitado/desabilitado, para que renomea-lo nao alcance nenhuma delas. */
+function botaoDeEnvio(): HTMLElement {
+  return screen.getByRole("button", { name: "Enviar" });
+}
+
+async function enviar(usuario: Usuario) {
+  await usuario.click(botaoDeEnvio());
 }
 
 describe("transferencia", () => {
@@ -161,9 +186,9 @@ describe("transferencia", () => {
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
     await screen.findByRole("option", { name: /Maria/ });
-    await usuario.selectOptions(screen.getByLabelText("Destino"), contato.id);
+    await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
-    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await enviar(usuario);
 
     await waitFor(() =>
       expect(corpo).toEqual({
@@ -212,7 +237,7 @@ describe("transferencia", () => {
 
     expect(await screen.findByText("J**** P****")).toBeInTheDocument();
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
-    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await enviar(usuario);
 
     await waitFor(() =>
       expect(corpo).toEqual({
@@ -239,7 +264,7 @@ describe("transferencia", () => {
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
     await screen.findByRole("option", { name: /Maria/ });
-    await usuario.selectOptions(screen.getByLabelText("Destino"), contato.id);
+    await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "999999.00");
 
     expect(
@@ -247,7 +272,7 @@ describe("transferencia", () => {
         "O valor é maior que o disponível calculado. Você pode enviar mesmo assim — quem decide é o servidor.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Enviar" })).toBeEnabled();
+    expect(botaoDeEnvio()).toBeEnabled();
   });
 
   it("saldo insuficiente do servidor aparece traduzido por codigo", async () => {
@@ -270,9 +295,9 @@ describe("transferencia", () => {
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
     await screen.findByRole("option", { name: /Maria/ });
-    await usuario.selectOptions(screen.getByLabelText("Destino"), contato.id);
+    await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
-    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await enviar(usuario);
 
     const alerta = await screen.findByRole("alert");
     expect(alerta).toHaveTextContent(i18n.t("INSUFFICIENT_FUNDS", { ns: "errors" }));
@@ -293,9 +318,9 @@ describe("transferencia", () => {
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
     await screen.findByRole("option", { name: /Maria/ });
-    await usuario.selectOptions(screen.getByLabelText("Destino"), contato.id);
+    await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
-    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await enviar(usuario);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       i18n.t("SAME_ACCOUNT_TRANSFER", { ns: "errors" }),
@@ -322,12 +347,12 @@ describe("transferencia", () => {
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
     await screen.findByRole("option", { name: /Maria/ });
-    await usuario.selectOptions(screen.getByLabelText("Destino"), contato.id);
+    await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
 
-    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await enviar(usuario);
     await screen.findByRole("alert");
-    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await enviar(usuario);
 
     await waitFor(() => expect(chaves).toHaveLength(2));
     expect(chaves[0]).toBe(chaves[1]);
@@ -385,14 +410,14 @@ describe("transferencia", () => {
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
     await screen.findByRole("option", { name: /Maria/ });
-    await usuario.selectOptions(screen.getByLabelText("Destino"), contato.id);
+    await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
-    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await enviar(usuario);
     await screen.findByRole("alert");
 
     await usuario.clear(screen.getByLabelText("Valor"));
     await usuario.type(screen.getByLabelText("Valor"), "200.00");
-    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await enviar(usuario);
 
     await waitFor(() => expect(chaves).toHaveLength(2));
     expect(chaves[0]).not.toBe(chaves[1]);
@@ -416,9 +441,9 @@ describe("transferencia", () => {
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
     await screen.findByRole("option", { name: /Maria/ });
-    await usuario.selectOptions(screen.getByLabelText("Destino"), contato.id);
+    await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
-    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await enviar(usuario);
     await screen.findByRole("alert");
 
     // So ACRESCENTA o espaco no fim, sem apagar nada: o valor aparado
@@ -428,7 +453,7 @@ describe("transferencia", () => {
     // coincidir por acaso depois) — o que provaria outra coisa, nao a
     // estabilidade da chave.
     await usuario.type(screen.getByLabelText("Valor"), " ");
-    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await enviar(usuario);
 
     await waitFor(() => expect(chaves).toHaveLength(2));
     expect(chaves[0]).toBe(chaves[1]);
@@ -497,9 +522,9 @@ describe("transferencia", () => {
     const antes = buscasDestino;
 
     await screen.findByRole("option", { name: /Maria/ });
-    await usuario.selectOptions(screen.getByLabelText("Destino"), contato.id);
+    await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
-    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await enviar(usuario);
 
     await waitFor(() => expect(buscasDestino).toBeGreaterThan(antes));
   });
@@ -529,7 +554,7 @@ describe("transferencia", () => {
     await within(destinoParaEnvio).findByRole("option", { name: /Reserva/ });
     await usuario.selectOptions(destinoParaEnvio, "conta-2");
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
-    await usuario.click(screen.getByRole("button", { name: "Enviar" }));
+    await enviar(usuario);
 
     await waitFor(() =>
       expect(corpo).toEqual({
@@ -600,7 +625,7 @@ describe("transferencia", () => {
     const destino = screen.getByLabelText("Destino");
     await within(destino).findByRole("option", { name: /Reserva/ });
 
-    await usuario.selectOptions(screen.getByLabelText("Conta de origem"), "conta-2");
+    await escolherOrigem(usuario, "conta-2");
 
     expect(within(destino).getByRole("option", { name: /Principal/ })).toBeInTheDocument();
     expect(
@@ -626,12 +651,12 @@ describe("transferencia", () => {
     await usuario.selectOptions(destino, "conta-2");
 
     // Troca a origem PARA a conta que estava escolhida como destino.
-    await usuario.selectOptions(screen.getByLabelText("Conta de origem"), "conta-2");
+    await escolherOrigem(usuario, "conta-2");
 
     expect(destino).toHaveValue("");
 
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
-    expect(screen.getByRole("button", { name: "Enviar" })).toBeDisabled();
+    expect(botaoDeEnvio()).toBeDisabled();
   });
 
   it("trocar a origem para uma terceira conta preserva o destino ja escolhido", async () => {
@@ -652,7 +677,7 @@ describe("transferencia", () => {
     await usuario.selectOptions(destino, "conta-2");
 
     // Troca a origem para uma conta QUE NAO E o destino escolhido.
-    await usuario.selectOptions(screen.getByLabelText("Conta de origem"), "conta-3");
+    await escolherOrigem(usuario, "conta-3");
 
     expect(destino).toHaveValue("conta-2");
   });
