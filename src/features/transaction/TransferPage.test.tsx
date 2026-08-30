@@ -162,11 +162,15 @@ async function escolherDestino(usuario: Usuario, id: string) {
 /** O botao que dispara a transferencia. Usado tambem pelas assercoes de
  *  habilitado/desabilitado, para que renomea-lo nao alcance nenhuma delas. */
 function botaoDeEnvio(): HTMLElement {
-  return screen.getByRole("button", { name: "Enviar" });
+  // Renomeado para "Continuar" quando a confirmacao entrou: ele abre a
+  // revisao em vez de enviar. As assercoes de habilitado/desabilitado
+  // continuam valendo sobre ele, sem uma linha alterada.
+  return screen.getByRole("button", { name: "Continuar" });
 }
 
 async function enviar(usuario: Usuario) {
   await usuario.click(botaoDeEnvio());
+  await usuario.click(screen.getByRole("button", { name: "Confirmar" }));
 }
 
 describe("transferencia", () => {
@@ -717,5 +721,41 @@ describe("transferencia", () => {
     await usuario.click(screen.getByTestId(`origem-${conta.id}`));
 
     expect(screen.getByTestId(`origem-${conta.id}`)).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("abrir e fechar a confirmacao NAO gera chave de idempotencia nova", async () => {
+    // O passo novo introduz uma hesitacao possivel: abrir a confirmacao,
+    // desistir, reabrir. Se cada abertura regenerasse a chave, a hesitacao
+    // viraria transferencia duplicada — exatamente o que a idempotencia
+    // existe para impedir.
+    const chaves: string[] = [];
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/transactions/transfer`, ({ request }) => {
+        chaves.push(request.headers.get("Idempotency-Key") ?? "");
+        // Sempre falha, como nos outros testes de chave: o sucesso navega
+        // para o comprovante e desmonta a tela, e o segundo envio precisa do
+        // MESMO formulario montado.
+        return HttpResponse.error();
+      }),
+    );
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    await screen.findByRole("option", { name: /Maria/ });
+    await escolherDestino(usuario, contato.id);
+    await usuario.type(screen.getByLabelText("Valor"), "100.00");
+
+    // Abre, desiste, abre de novo, confirma.
+    await usuario.click(botaoDeEnvio());
+    await usuario.click(screen.getByRole("button", { name: "Cancelar" }));
+    await enviar(usuario);
+
+    // Envia de novo sem mexer em nada: a chave tem de ser a mesma, apesar
+    // das aberturas a mais.
+    await waitFor(() => expect(chaves).toHaveLength(1));
+    await enviar(usuario);
+
+    await waitFor(() => expect(chaves).toHaveLength(2));
+    expect(chaves[0]).toBe(chaves[1]);
   });
 });

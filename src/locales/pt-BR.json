@@ -177,7 +177,11 @@
     "stepDestination": "Destino",
     "stepAmount": "Valor",
     "stepsProgress": "Etapa {{feitas}} de {{total}}",
-    "manualEntry": "Inserir manualmente"
+    "manualEntry": "Inserir manualmente",
+    "continue": "Continuar",
+    "confirm": "Confirmar",
+    "reviewTitle": "Confira antes de enviar",
+    "afterTransfer": "Disponível depois"
   },
   "landing": {
     "nav": {

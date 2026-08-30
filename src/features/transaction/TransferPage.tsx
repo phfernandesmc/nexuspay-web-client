@@ -9,6 +9,7 @@ import { useContas } from "@/features/account/queries";
 import AccountLookup from "@/features/contact/AccountLookup";
 import { useContatos } from "@/features/contact/queries";
 import type { ResultadoBusca } from "@/features/contact/types";
+import Modal from "@/components/layout/Modal";
 import SourceAccountPicker from "@/features/transaction/SourceAccountPicker";
 import TransferSteps from "@/features/transaction/TransferSteps";
 import { useChaveDeIntencao } from "@/features/transaction/idempotency";
@@ -29,6 +30,7 @@ export default function TransferPage() {
   const [achada, setAchada] = useState<ResultadoBusca | null>(null);
   const [valor, setValor] = useState("");
   const [erro, setErro] = useState<string | null>(null);
+  const [confirmando, setConfirmando] = useState(false);
 
   // As TRES entradas terminam no mesmo lugar: um account_id, que e o que o
   // gateway pede. Conta propria ja tem o id em maos; contato guarda o id da
@@ -49,6 +51,11 @@ export default function TransferPage() {
   });
 
   const origem = (contas ?? []).find((c) => c.id === origemId);
+  const destinoRotulo =
+    achada?.holder_name ??
+    (contas ?? []).find((c) => c.id === contatoId)?.alias ??
+    (contatos ?? []).find((c) => c.id === contatoId)?.alias ??
+    "";
   // O pendente vem junto com a conta. Ate a Fatia 3c isto era derivado de
   // uma consulta ao extrato com limit=100, e podia ficar MAIOR que o real.
   const disponivelCentavos =
@@ -73,6 +80,7 @@ export default function TransferPage() {
   // construcao (SAME_ACCOUNT_TRANSFER por outra porta).
   async function aoEnviar() {
     setErro(null);
+    setConfirmando(false);
     try {
       const { transacao, criadaAgora } = await transferir.mutateAsync({
         entrada: {
@@ -239,9 +247,73 @@ export default function TransferPage() {
       )}
 
       {/* O botao NAO desabilita por causa do disponivel: quem decide e o servidor. */}
-      <Button onClick={() => void aoEnviar()} disabled={incompleto || transferir.isPending}>
-        {transferir.isPending ? t("transaction:sending") : t("transaction:send")}
+      <Button
+        className="rounded-full bg-gradient-to-r from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] text-white"
+        onClick={() => setConfirmando(true)}
+        disabled={incompleto || transferir.isPending}
+      >
+        {t("transaction:continue")}
       </Button>
+
+      {/* A revisao antes de mover dinheiro. A chave de idempotencia nasce de
+          (origem, destino, valor) e nenhum dos tres muda enquanto isto esta
+          aberto — abrir, desistir e reabrir mantem a MESMA chave, senao a
+          hesitacao do usuario viraria transferencia duplicada. */}
+      {confirmando && (
+        <Modal titulo={t("transaction:reviewTitle")} aoFechar={() => setConfirmando(false)}>
+          <dl className="flex flex-col gap-3 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">{t("transaction:source")}</dt>
+              <dd className="text-right font-medium">
+                {origem?.alias ?? origem?.number} · {origem?.institution.name}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">{t("transaction:destination")}</dt>
+              <dd className="text-right font-medium">{destinoRotulo}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">{t("transaction:value")}</dt>
+              <dd className="text-right text-lg font-bold">
+                {valorCentavos === null
+                  ? valor
+                  : formatarDinheiro(valorCentavos, i18n.language)}
+              </dd>
+            </div>
+            {disponivelCentavos !== null && valorCentavos !== null && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">{t("transaction:afterTransfer")}</dt>
+                <dd className="text-right font-medium">
+                  {formatarDinheiro(disponivelCentavos - valorCentavos, i18n.language)}
+                </dd>
+              </div>
+            )}
+          </dl>
+
+          {acimaDoDisponivel && (
+            <Alert role="status" className="mt-4">
+              <AlertDescription>{t("transaction:overAvailable")}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="mt-6 flex gap-2">
+            <Button
+              className="flex-1 rounded-full bg-gradient-to-r from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] text-white"
+              onClick={() => void aoEnviar()}
+              disabled={transferir.isPending}
+            >
+              {transferir.isPending ? t("transaction:sending") : t("transaction:confirm")}
+            </Button>
+            <Button
+              variant="ghost"
+              className="rounded-full"
+              onClick={() => setConfirmando(false)}
+            >
+              {t("contact:cancel")}
+            </Button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

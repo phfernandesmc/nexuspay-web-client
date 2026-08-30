@@ -177,7 +177,11 @@
     "stepDestination": "Recipient",
     "stepAmount": "Amount",
     "stepsProgress": "Step {{feitas}} of {{total}}",
-    "manualEntry": "Enter manually"
+    "manualEntry": "Enter manually",
+    "continue": "Continue",
+    "confirm": "Confirm",
+    "reviewTitle": "Review before sending",
+    "afterTransfer": "Available afterwards"
   },
   "landing": {
     "nav": {
