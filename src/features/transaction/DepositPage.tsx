@@ -9,6 +9,7 @@ import { useContas } from "@/features/account/queries";
 import { useChaveDeIntencao } from "@/features/transaction/idempotency";
 import { useDepositar } from "@/features/transaction/queries";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
+import { paraCentavos } from "@/lib/money";
 
 export default function DepositPage() {
   const { t } = useTranslation(["transaction", "errors"]);
@@ -40,7 +41,18 @@ export default function DepositPage() {
     }
   }
 
-  const incompleto = contaId === "" || valor.trim() === "";
+  // Nao basta a string nao ser vazia: "0" e "0,00" passavam e habilitavam
+  // um deposito de zero, que o gateway recusa (Amount tem gt=0). O try/catch
+  // e necessario porque paraCentavos LANCA em texto invalido — enquanto se
+  // digita, o campo passa por estados que nao sao numero.
+  const valorCentavos = (() => {
+    try {
+      return valor.trim() === "" ? null : paraCentavos(valor.trim());
+    } catch {
+      return null;
+    }
+  })();
+  const incompleto = contaId === "" || valorCentavos === null || valorCentavos <= 0;
 
   // A falha de rede nao pode se disfarcar de "voce nao tem contas": as duas
   // renderizariam o mesmo select vazio, e depositar e a UNICA forma de por

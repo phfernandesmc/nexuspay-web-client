@@ -314,4 +314,17 @@ describe("deposito", () => {
 
     await waitFor(() => expect(listagens).toBeGreaterThan(antes));
   });
+
+  it("valor zerado NAO habilita o envio", async () => {
+    // Mesmo furo da transferencia: a completude olhava string vazia, e "0"
+    // nao e vazia.
+    montar();
+    const usuario = userEvent.setup();
+    await screen.findByRole("option", { name: /Principal/ });
+    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
+
+    await usuario.type(screen.getByLabelText("Valor"), "0");
+
+    expect(screen.getByRole("button", { name: "Enviar" })).toBeDisabled();
+  });
 });
