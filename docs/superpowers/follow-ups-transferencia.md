@@ -1,11 +1,10 @@
 # Follow-ups — redesenho da transferência
 
-## Transferência entre contas próprias saiu da tela de transferência
+## Transferência entre contas próprias — RESOLVIDO
 
-**O recurso está indisponível no app.** O gateway continua suportando: a rota
-`POST /api/v1/transactions/transfer` aceita origem e destino do mesmo dono, o
-extrato marca `is_between_own_accounts`, e `SAME_ACCOUNT_TRANSFER` segue
-guardando o caso de origem igual a destino. Só a interface deixou de oferecer.
+**Situação:** implementada no detalhe da conta (`OwnTransferDialog`), como este
+documento previa. O texto abaixo fica como registro do porquê ela mudou de
+lugar — a decisão não é óbvia lendo só o código.
 
 ### Por que saiu
 
@@ -27,14 +26,23 @@ saldo e extrato daquela conta. "Transferir para outra conta minha" ali tem
 contexto que a tela genérica não tem: a conta de origem já está definida, e o
 destino é a lista curta das outras contas do mesmo dono.
 
-### O que precisa existir
+### O que foi feito
 
-- Ação no detalhe da conta, com a conta atual como origem fixa.
-- Escolha do destino entre as **outras** contas do mesmo usuário, excluindo a
-  atual e as encerradas.
-- Reaproveitar `useChaveDeIntencao` para a idempotência, com a mesma
-  assinatura `(source_account_id, destination_account_id, amount)`.
-- Reaproveitar o `Modal` de confirmação da transferência.
+- Ação no detalhe da conta, com a conta atual como origem fixa. ✔
+- Destino entre as **outras** contas do mesmo usuário, excluindo a atual e as
+  encerradas. ✔
+- `useChaveDeIntencao` reaproveitado, com a mesma assinatura. ✔
+- `Modal` reaproveitado. ✔
+
+Duas coisas que este documento não previa e foram decididas na
+implementação:
+
+- **A ação não é oferecida** quando a conta tem saldo zero ou está encerrada.
+  Oferecê-la levaria a pessoa a preencher um formulário que o gateway vai
+  recusar, com o erro aparecendo depois do trabalho em vez de antes.
+- `useTransferir` já invalidava **as duas** contas em caso de sucesso, com um
+  comentário dizendo que podiam ser do mesmo dono. O lado de cache já estava
+  pronto para este recurso antes de ele existir.
 
 ### Testes removidos com a mudança
 
@@ -51,5 +59,8 @@ O sexto virou `trocar a origem preserva o destino ja escolhido`, que continua
 guardando algo real: a troca de origem não pode derrubar em silêncio o
 destinatário já escolhido.
 
-**Ao implementar no detalhe da conta, o primeiro deles é o teste a recuperar** —
-ele descreve o caminho feliz do recurso.
+**O primeiro deles foi recuperado**, como este documento pedia, agora em
+`OwnTransferDialog.test.tsx`: `transfere para uma conta propria sem passar pelo
+lookup`. Junto veio o que faltava — `a propria conta e as encerradas NAO
+aparecem como destino` —, que na tela antiga estava espalhado por quatro provas
+de regras cruzadas.

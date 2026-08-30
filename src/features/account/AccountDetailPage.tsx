@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Archive, ArrowLeft, Pencil } from "lucide-react";
+import { Archive, ArrowLeft, ArrowLeftRight, Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import BankCard from "@/features/institution/BankCard";
+import OwnTransferDialog from "@/features/account/OwnTransferDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useConta } from "@/features/account/queries";
 import RenameAccountDialog from "@/features/account/RenameAccountDialog";
@@ -20,6 +22,7 @@ export default function AccountDetailPage() {
   const { data: conta, isPending, isError, error } = useConta(id);
   const [renomeando, setRenomeando] = useState(false);
   const [encerrando, setEncerrando] = useState(false);
+  const [transferindo, setTransferindo] = useState(false);
 
   if (isPending) return <p>{t("common:loading")}</p>;
 
@@ -121,6 +124,25 @@ export default function AccountDetailPage() {
       )}
       {encerrando && (
         <CloseAccountDialog contaId={conta.id} aberto={encerrando} onFechar={() => setEncerrando(false)} />
+      )}
+
+      {/* Sem saldo nao ha o que enviar, e conta encerrada nao opera.
+          Oferecer a acao nesses casos levaria a pessoa a preencher um
+          formulario que o gateway vai recusar — o erro apareceria depois do
+          trabalho, nao antes. O saldo esta logo acima, entao a ausencia do
+          botao se explica sozinha. */}
+      {conta.status !== "CLOSED" && paraCentavos(conta.balance) > 0 && (
+        <Button
+          className="w-fit gap-2 rounded-full bg-gradient-to-r from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] px-6 text-white"
+          onClick={() => setTransferindo(true)}
+        >
+          <ArrowLeftRight aria-hidden="true" className="size-4" />
+          {t("account:ownTransfer")}
+        </Button>
+      )}
+
+      {transferindo && (
+        <OwnTransferDialog conta={conta} aoFechar={() => setTransferindo(false)} />
       )}
 
       <div className="rounded-2xl border p-6">

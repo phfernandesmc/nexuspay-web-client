@@ -101,7 +101,8 @@
     "closeConfirmButton": "Close",
     "available": "Available",
     "totalBalance": "Total balance",
-    "backToList": "All accounts"
+    "backToList": "All accounts",
+    "ownTransfer": "Transfer between my accounts"
   },
   "statement": {
     "title": "Statement",

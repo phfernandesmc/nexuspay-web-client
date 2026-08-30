@@ -208,4 +208,35 @@ describe("detalhe da conta", () => {
     const voltar = await screen.findByRole("link", { name: "Todas as contas" });
     expect(voltar).toHaveAttribute("href", "/contas");
   });
+
+  it("oferece transferir entre contas proprias", async () => {
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts/${conta.id}`, () => HttpResponse.json(conta)),
+    );
+    montar();
+
+    expect(
+      await screen.findByRole("button", { name: "Transferir entre minhas contas" }),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    ["saldo zero", { balance: "0.00" }],
+    ["conta encerrada", { status: "CLOSED" }],
+  ])("NAO oferece transferir quando a conta tem %s", async (_caso, extras) => {
+    // Sem saldo nao ha o que enviar, e conta encerrada nao opera. Oferecer a
+    // acao nesses casos leva a pessoa a preencher um formulario que o
+    // gateway vai recusar — o erro aparece depois do trabalho, nao antes.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts/${conta.id}`, () =>
+        HttpResponse.json({ ...conta, ...extras }),
+      ),
+    );
+    montar();
+    await screen.findByText(/Banco Um/);
+
+    expect(
+      screen.queryByRole("button", { name: "Transferir entre minhas contas" }),
+    ).toBeNull();
+  });
 });

@@ -101,7 +101,8 @@
     "closeConfirmButton": "Encerrar",
     "available": "Disponível",
     "totalBalance": "Saldo total",
-    "backToList": "Todas as contas"
+    "backToList": "Todas as contas",
+    "ownTransfer": "Transferir entre minhas contas"
   },
   "statement": {
     "title": "Extrato",
