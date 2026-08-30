@@ -5,6 +5,11 @@ idiomas (PT-BR e EN). Consome o gateway FastAPI.
 
 ## Rodar
 
+> Este repositório é uma das três partes do NexusPay. Para subir o sistema
+> inteiro na ordem certa, veja
+> [RODANDO-LOCALMENTE.md](https://github.com/phfernandesmc/nexuspay-api-gateway/blob/main/RODANDO-LOCALMENTE.md) no repositório do gateway.
+
+
 Pré-requisito: o gateway no ar em `http://localhost:8000`.
 
 ```bash
