@@ -86,6 +86,22 @@ export default function AccountsPage() {
               </Link>
             ))}
           </div>
+
+          {/* Sem este botao, sair do dialogo exigia clicar fora ou saber que
+              Escape fecha — duas saidas que ninguem anuncia. E aqui pesa
+              mais que nos outros modais: TODAS as opcoes da lista sao links
+              que navegam, entao nao existe nenhum controle inofensivo para
+              clicar por engano enquanto se decide.
+
+              Vermelho so no hover: desistir e reversivel, mas a cor confirma
+              a intencao no momento do clique. */}
+          <Button
+            variant="ghost"
+            className="mt-4 w-full rounded-full hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => setEscolhendoOrigem(false)}
+          >
+            {t("account:cancel")}
+          </Button>
         </Modal>
       )}
 

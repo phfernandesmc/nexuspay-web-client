@@ -209,4 +209,27 @@ describe("lista de contas", () => {
     expect(dialogo.queryByRole("link", { name: /Zerada/ })).toBeNull();
     expect(dialogo.queryByRole("link", { name: /Antiga/ })).toBeNull();
   });
+
+  it("cancelar fecha a escolha de origem", async () => {
+    // Sem botao, sair do dialogo exigia clicar fora ou saber que Escape
+    // fecha — duas saidas que ninguem anuncia. As opcoes ali sao todas
+    // links que NAVEGAM, entao a unica forma de "nao fazer nada" precisa
+    // estar visivel.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () =>
+        HttpResponse.json([conta, { ...conta, id: "c-outra", alias: "Reserva" }]),
+      ),
+    );
+    montar();
+    const usuario = userEvent.setup();
+    await usuario.click(
+      await screen.findByRole("button", { name: "Transferir entre minhas contas" }),
+    );
+
+    await usuario.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Cancelar" }),
+    );
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
 });
