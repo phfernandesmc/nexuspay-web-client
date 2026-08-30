@@ -8,7 +8,8 @@
     "accounts": "Accounts",
     "contacts": "Contacts",
     "transfer": "Transfer",
-    "deposit": "Deposit"
+    "deposit": "Deposit",
+    "back": "Back"
   },
   "auth": {
     "login": {
@@ -16,7 +17,12 @@
       "email": "Email",
       "password": "Password",
       "submit": "Sign in",
-      "toRegister": "Create an account"
+      "toRegister": "Create an account",
+      "showPassword": "Show",
+      "hidePassword": "Hide",
+      "emailPlaceholder": "you@email.com",
+      "demo": "Sign in with the demo account",
+      "demoHint": "Demo account: {{email}}"
     },
     "register": {
       "title": "Create your account",
@@ -25,7 +31,11 @@
       "document": "CPF",
       "password": "Password",
       "submit": "Create account",
-      "toLogin": "I already have an account"
+      "toLogin": "I already have an account",
+      "namePlaceholder": "Your full name",
+      "emailPlaceholder": "you@email.com",
+      "documentPlaceholder": "000.000.000-00",
+      "passwordPlaceholder": "At least 8 characters"
     },
     "validation": {
       "required": "Please fill in this field.",
@@ -202,8 +212,7 @@
     "footer": {
       "frontend": "GitHub front-end",
       "gateway": "GitHub gateway",
-      "worker": "GitHub worker",
-      "demoHint": "Sign in with joao@example.com / senha123"
+      "worker": "GitHub worker"
     }
   }
 }

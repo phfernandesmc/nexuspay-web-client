@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { http as mswHttp, HttpResponse } from "msw";
@@ -34,7 +34,10 @@ beforeEach(async () => {
   });
 });
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
 describe("tela de login", () => {
   it("credencial correta autentica", async () => {
@@ -153,5 +156,62 @@ describe("tela de login", () => {
     );
     // Consumido uma unica vez: nao pode reaparecer no proximo login.
     expect(useSession.getState().motivoEncerramento).toBeNull();
+  });
+
+  it("o botao Mostrar revela e esconde a senha", async () => {
+    // A senha nasce mascarada e precisa voltar a ser mascarada: um toggle
+    // que so abre deixa a senha exposta na tela depois que o usuario ja
+    // conferiu o que digitou.
+    montar();
+    const usuarioTeclado = userEvent.setup();
+    const senha = screen.getByLabelText("Senha");
+    expect(senha).toHaveAttribute("type", "password");
+
+    await usuarioTeclado.click(screen.getByRole("button", { name: "Mostrar" }));
+    expect(senha).toHaveAttribute("type", "text");
+
+    await usuarioTeclado.click(screen.getByRole("button", { name: "Esconder" }));
+    expect(senha).toHaveAttribute("type", "password");
+  });
+
+  it("o botao de demo entra com as credenciais da conta semeada", async () => {
+    vi.stubEnv("VITE_DEMO_EMAIL", "joao@example.com");
+    vi.stubEnv("VITE_DEMO_PASSWORD", "senha123");
+
+    let enviado: unknown = null;
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/auth/login`, async ({ request }) => {
+        enviado = await request.json();
+        return HttpResponse.json({ access_token: "tok", token_type: "bearer", expires_in: 900 });
+      }),
+      mswHttp.get(`${URL_TESTE}/auth/me`, () => HttpResponse.json(usuario)),
+    );
+    montar();
+
+    await userEvent.click(screen.getByRole("button", { name: "Entrar com a conta demo" }));
+
+    // Afirma o que foi ENVIADO, nao so que autenticou: um botao que entra
+    // com o formulario vazio tambem deixaria o status "authenticated" se o
+    // servidor fosse permissivo.
+    await waitFor(() => expect(useSession.getState().status).toBe("authenticated"));
+    expect(enviado).toEqual({ email: "joao@example.com", password: "senha123" });
+  });
+
+  it("sem as variaveis de demo o botao NAO existe", () => {
+    // Esta e a metade que protege o resto. O sintoma de uma falha aqui e um
+    // botao a MAIS — acesso sem senha a uma conta, aparecendo num ambiente
+    // que nunca pediu por ele. Ninguem repara num botao sobrando.
+    //
+    // As variaveis sao zeradas EXPLICITAMENTE, e nao deixadas por conta do
+    // ambiente: o Vite carrega o .env local tambem nos testes, entao um
+    // desenvolvedor que ligue a demo na propria maquina fazia este teste
+    // quebrar — e, pior, ele passaria no CI escondendo isso. Um teste cujo
+    // resultado depende de arquivo nao versionado nao prova nada.
+    vi.stubEnv("VITE_DEMO_EMAIL", "");
+    vi.stubEnv("VITE_DEMO_PASSWORD", "");
+
+    montar();
+
+    expect(screen.queryByRole("button", { name: "Entrar com a conta demo" })).toBeNull();
   });
 });

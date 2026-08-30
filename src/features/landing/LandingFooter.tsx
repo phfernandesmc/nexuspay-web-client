@@ -27,15 +27,17 @@ export default function LandingFooter() {
           ))}
         </nav>
 
-        <div className="flex flex-col items-center gap-1 sm:items-end">
-          <Link
-            to="/login"
-            className="rounded-full bg-gradient-to-r from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] px-5 py-2 text-sm font-medium text-white"
-          >
-            {t("landing:nav.demo")}
-          </Link>
-          <p className="text-xs text-muted-foreground">{t("landing:footer.demoHint")}</p>
-        </div>
+        {/* Sem as credenciais escritas aqui: elas viviam no arquivo de
+            traducao, que vai para o bundle SEMPRE — inclusive num deploy que
+            deixe VITE_DEMO_* vazio de proposito. Quem entra por este botao
+            encontra o acesso de demonstracao no proprio login, e la ele so
+            aparece quando foi ligado. */}
+        <Link
+          to="/login"
+          className="rounded-full bg-gradient-to-r from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] px-5 py-2 text-sm font-medium text-white"
+        >
+          {t("landing:nav.demo")}
+        </Link>
       </div>
     </footer>
   );

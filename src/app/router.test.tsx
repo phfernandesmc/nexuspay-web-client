@@ -260,4 +260,30 @@ describe("rotas de conta e dinheiro", () => {
 
     expect(await screen.findByRole("heading", { name: "Comprovante" })).toBeInTheDocument();
   });
+
+  it("depois de sair, voltar para a landing NAO devolve ao login", async () => {
+    // O laco que este teste existe para impedir: sair marca sessaoEncerrada,
+    // e sessaoEncerrada faz a raiz redirecionar de volta para /login. Sem
+    // limpar a marca ao voltar de proposito, o botao levaria a / e a / o
+    // devolveria ao login — parecendo um botao quebrado justamente para quem
+    // acabou de usar o app.
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/auth/refresh`, () =>
+        HttpResponse.json({ access_token: "tok", token_type: "bearer", expires_in: 900 }),
+      ),
+      mswHttp.get(`${URL_TESTE}/auth/me`, () => HttpResponse.json(usuario)),
+      mswHttp.post(`${URL_TESTE}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    render(<App />);
+    await screen.findByRole("heading", { name: "Início" });
+    await userEvent.click(screen.getByRole("button", { name: "Sair" }));
+    await screen.findByText("Entrar na sua conta");
+
+    await userEvent.click(screen.getByRole("link", { name: "Voltar" }));
+
+    expect(
+      await screen.findByRole("heading", { name: /movido a eventos/i }),
+    ).toBeInTheDocument();
+  });
 });

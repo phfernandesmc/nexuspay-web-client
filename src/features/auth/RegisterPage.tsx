@@ -4,11 +4,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { IdCard, Lock, Mail, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import AuthLayout from "@/features/auth/AuthLayout";
 import { registrar } from "@/features/auth/api";
 import { useSession } from "@/features/auth/session.store";
 import { camposInvalidos, codigoTraduzivel, extrairErro } from "@/lib/errors";
@@ -81,50 +82,69 @@ export default function RegisterPage() {
     }
   }
 
-  const campos: Array<{ nome: keyof Campos; rotulo: string; tipo: string; auto: string }> = [
-    { nome: "full_name", rotulo: t("auth:register.fullName"), tipo: "text", auto: "name" },
-    { nome: "email", rotulo: t("auth:register.email"), tipo: "email", auto: "email" },
-    { nome: "document", rotulo: t("auth:register.document"), tipo: "text", auto: "off" },
-    { nome: "password", rotulo: t("auth:register.password"), tipo: "password", auto: "new-password" },
-  ];
+  const campos = [
+    { nome: "full_name", rotulo: t("auth:register.fullName"), tipo: "text", auto: "name", Icone: User, dica: t("auth:register.namePlaceholder") },
+    { nome: "email", rotulo: t("auth:register.email"), tipo: "email", auto: "email", Icone: Mail, dica: t("auth:register.emailPlaceholder") },
+    // Placeholder formatado, campo sem mascara: o gateway recebe os 11
+    // digitos como sempre recebeu. A pontuacao aqui e dica visual, nao
+    // formato de envio.
+    { nome: "document", rotulo: t("auth:register.document"), tipo: "text", auto: "off", Icone: IdCard, dica: t("auth:register.documentPlaceholder") },
+    { nome: "password", rotulo: t("auth:register.password"), tipo: "password", auto: "new-password", Icone: Lock, dica: t("auth:register.passwordPlaceholder") },
+  ] as const satisfies ReadonlyArray<{
+    nome: keyof Campos;
+    rotulo: string;
+    tipo: string;
+    auto: string;
+    Icone: typeof User;
+    dica: string;
+  }>;
 
   return (
-    <Card className="mx-auto mt-16 w-full max-w-sm">
-      <CardHeader>
-        <CardTitle>{t("auth:register.title")}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(aoEnviar)} className="flex flex-col gap-4" noValidate>
-          {campos.map((campo) => (
-            <div key={campo.nome} className="flex flex-col gap-2">
-              <Label htmlFor={campo.nome}>{campo.rotulo}</Label>
+    <AuthLayout>
+      <h1 className="mb-6 text-center text-xl font-semibold">{t("auth:register.title")}</h1>
+
+      <form onSubmit={handleSubmit(aoEnviar)} className="flex flex-col gap-4" noValidate>
+        {campos.map(({ nome, rotulo, tipo, auto, Icone, dica }) => (
+          <div key={nome} className="flex flex-col gap-2">
+            <Label htmlFor={nome}>{rotulo}</Label>
+            <div className="relative">
+              <Icone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                id={campo.nome}
-                type={campo.tipo}
-                autoComplete={campo.auto}
-                aria-describedby={`${campo.nome}-erro`}
-                {...register(campo.nome)}
+                id={nome}
+                type={tipo}
+                autoComplete={auto}
+                placeholder={dica}
+                aria-describedby={`${nome}-erro`}
+                className="pl-9"
+                {...register(nome)}
               />
-              <p id={`${campo.nome}-erro`} className="text-sm text-destructive">
-                {formState.errors[campo.nome]?.message}
-              </p>
             </div>
-          ))}
+            <p id={`${nome}-erro`} className="text-sm text-destructive">
+              {formState.errors[nome]?.message}
+            </p>
+          </div>
+        ))}
 
-          {erro !== null && (
-            <Alert variant="destructive">
-              <AlertDescription>{erro}</AlertDescription>
-            </Alert>
-          )}
+        {erro !== null && (
+          <Alert variant="destructive">
+            <AlertDescription>{erro}</AlertDescription>
+          </Alert>
+        )}
 
-          <Button type="submit" disabled={formState.isSubmitting}>
-            {t("auth:register.submit")}
-          </Button>
-          <Link to="/login" className="text-sm underline">
-            {t("auth:register.toLogin")}
-          </Link>
-        </form>
-      </CardContent>
-    </Card>
+        <Button
+          type="submit"
+          disabled={formState.isSubmitting}
+          className="rounded-full bg-gradient-to-r from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] text-white"
+        >
+          {t("auth:register.submit")}
+        </Button>
+      </form>
+
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        <Link to="/login" className="font-medium text-[var(--marca-1)]">
+          {t("auth:register.toLogin")}
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }
