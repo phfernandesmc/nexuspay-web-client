@@ -98,8 +98,9 @@ describe("deposito", () => {
 
     montar();
     const usuario = userEvent.setup();
-    await screen.findByRole("option", { name: /Principal/ });
-    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
+    await screen.findByTestId(`origem-${conta.id}`);
+    // A conta virou carrossel; o caminho mudou, as provas nao.
+    await usuario.click(await screen.findByTestId(`origem-${conta.id}`));
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
 
@@ -130,8 +131,9 @@ describe("deposito", () => {
 
     montar();
     const usuario = userEvent.setup();
-    await screen.findByRole("option", { name: /Principal/ });
-    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
+    await screen.findByTestId(`origem-${conta.id}`);
+    // A conta virou carrossel; o caminho mudou, as provas nao.
+    await usuario.click(await screen.findByTestId(`origem-${conta.id}`));
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
 
@@ -167,8 +169,9 @@ describe("deposito", () => {
 
     montar();
     const usuario = userEvent.setup();
-    await screen.findByRole("option", { name: /Principal/ });
-    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
+    await screen.findByTestId(`origem-${conta.id}`);
+    // A conta virou carrossel; o caminho mudou, as provas nao.
+    await usuario.click(await screen.findByTestId(`origem-${conta.id}`));
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
     await screen.findByRole("alert");
@@ -196,8 +199,9 @@ describe("deposito", () => {
 
     montar();
     const usuario = userEvent.setup();
-    await screen.findByRole("option", { name: /Principal/ });
-    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
+    await screen.findByTestId(`origem-${conta.id}`);
+    // A conta virou carrossel; o caminho mudou, as provas nao.
+    await usuario.click(await screen.findByTestId(`origem-${conta.id}`));
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
     await screen.findByRole("alert");
@@ -232,8 +236,9 @@ describe("deposito", () => {
 
     montar();
     const usuario = userEvent.setup();
-    await screen.findByRole("option", { name: /Principal/ });
-    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
+    await screen.findByTestId(`origem-${conta.id}`);
+    // A conta virou carrossel; o caminho mudou, as provas nao.
+    await usuario.click(await screen.findByTestId(`origem-${conta.id}`));
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
 
@@ -252,8 +257,9 @@ describe("deposito", () => {
 
     montar();
     const usuario = userEvent.setup();
-    await screen.findByRole("option", { name: /Principal/ });
-    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
+    await screen.findByTestId(`origem-${conta.id}`);
+    // A conta virou carrossel; o caminho mudou, as provas nao.
+    await usuario.click(await screen.findByTestId(`origem-${conta.id}`));
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
 
@@ -301,14 +307,15 @@ describe("deposito", () => {
       </>,
     );
     const usuario = userEvent.setup();
-    await screen.findByRole("option", { name: /Principal/ });
+    await screen.findByTestId(`origem-${conta.id}`);
     // A montagem ja dispara uma listagem inicial (DepositPage e
     // ListaObservada observam a mesma chave); guarda o numero para so contar
     // o que acontece DEPOIS do deposito.
     await waitFor(() => expect(listagens).toBeGreaterThanOrEqual(1));
     const antes = listagens;
 
-    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
+    // A conta virou carrossel; o caminho mudou, as provas nao.
+    await usuario.click(await screen.findByTestId(`origem-${conta.id}`));
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await usuario.click(screen.getByRole("button", { name: "Enviar" }));
 
@@ -320,11 +327,44 @@ describe("deposito", () => {
     // nao e vazia.
     montar();
     const usuario = userEvent.setup();
-    await screen.findByRole("option", { name: /Principal/ });
-    await usuario.selectOptions(screen.getByLabelText("Conta"), conta.id);
+    await screen.findByTestId(`origem-${conta.id}`);
+    // A conta virou carrossel; o caminho mudou, as provas nao.
+    await usuario.click(await screen.findByTestId(`origem-${conta.id}`));
 
     await usuario.type(screen.getByLabelText("Valor"), "0");
 
     expect(screen.getByRole("button", { name: "Enviar" })).toBeDisabled();
+  });
+
+  it("conta com saldo zero PODE receber deposito", async () => {
+    // O oposto da transferencia, de proposito. La, conta vazia nao pode ser
+    // ORIGEM porque nao ha o que enviar. Aqui ela e o caso mais util: um
+    // deposito e justamente como ela deixa de estar vazia. Reusar o
+    // bloqueio do carrossel de origem impediria isso.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () =>
+        HttpResponse.json([{ ...conta, balance: "0.00", pending_outgoing: "0.00" }]),
+      ),
+    );
+    montar();
+    const usuario = userEvent.setup();
+
+    const cartao = await screen.findByTestId(`origem-${conta.id}`);
+    expect(cartao).not.toHaveAttribute("aria-disabled", "true");
+
+    await usuario.click(cartao);
+
+    expect(cartao).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("o valor aparece formatado enquanto se digita", async () => {
+    montar();
+    const usuario = userEvent.setup();
+    const campo = screen.getByLabelText("Valor");
+    const visivel = () => (campo as HTMLInputElement).value.replace(/\u00a0/g, " ");
+
+    await usuario.type(campo, "5077");
+
+    expect(visivel()).toBe("R$ 50,77");
   });
 });

@@ -170,9 +170,15 @@ export default function TransferPage() {
           "voce pode enviar mesmo assim". Marcar a etapa como pendente aqui
           contradiria isso em silencio. */}
       <TransferSteps
-        origem={origemId !== ""}
-        destino={destinoId !== ""}
-        valor={valorCentavos !== null && valorCentavos > 0}
+        etapas={[
+          { id: "origem", rotulo: t("transaction:stepAccount"), feita: origemId !== "" },
+          { id: "destino", rotulo: t("transaction:stepDestination"), feita: destinoId !== "" },
+          {
+            id: "valor",
+            rotulo: t("transaction:stepAmount"),
+            feita: valorCentavos !== null && valorCentavos > 0,
+          },
+        ]}
       />
 
       <SourceAccountPicker

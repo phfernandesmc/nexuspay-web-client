@@ -20,10 +20,22 @@ export default function SourceAccountPicker({
   contas,
   escolhida,
   aoEscolher,
+  rotulo,
+  bloquearSemSaldo = true,
 }: {
   contas: Conta[];
   escolhida: string;
   aoEscolher: (id: string) => void;
+  rotulo?: string;
+  /**
+   * Bloqueia conta sem saldo. Ligado por padrao, porque o uso original e
+   * escolher a ORIGEM de uma transferencia.
+   *
+   * O deposito desliga: la a conta vazia e o caso mais util, ja que o
+   * deposito e justamente como ela deixa de estar vazia. O mesmo bloqueio
+   * que protege um fluxo seria um bug no outro.
+   */
+  bloquearSemSaldo?: boolean;
 }) {
   const { t, i18n } = useTranslation(["transaction", "account"]);
   const locale = i18n.resolvedLanguage ?? "pt-BR";
@@ -39,7 +51,7 @@ export default function SourceAccountPicker({
    * porem, nao ha decisao do servidor que torne o envio possivel.
    */
   function semSaldo(conta: Conta): boolean {
-    return paraCentavos(conta.balance) === 0;
+    return bloquearSemSaldo && paraCentavos(conta.balance) === 0;
   }
 
   function aoTeclar(evento: React.KeyboardEvent, indice: number) {
@@ -64,7 +76,7 @@ export default function SourceAccountPicker({
   return (
     <div
       role="radiogroup"
-      aria-label={t("transaction:source")}
+      aria-label={rotulo ?? t("transaction:source")}
       // p-1 nao e estetica: o anel de selecao e desenhado FORA do cartao
       // (ring-2 mais ring-offset-2, 4px alem da borda) e overflow-x-auto
       // corta tudo que passa dos limites — sem esse respiro, o anel do

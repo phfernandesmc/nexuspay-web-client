@@ -9,10 +9,17 @@ import { useContas } from "@/features/account/queries";
 import { useChaveDeIntencao } from "@/features/transaction/idempotency";
 import { useDepositar } from "@/features/transaction/queries";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
-import { paraCentavos } from "@/lib/money";
+import {
+  centavosDeDigitos,
+  centavosParaDecimal,
+  formatarDinheiro,
+  paraCentavos,
+} from "@/lib/money";
+import SourceAccountPicker from "@/features/transaction/SourceAccountPicker";
+import TransferSteps from "@/features/transaction/TransferSteps";
 
 export default function DepositPage() {
-  const { t } = useTranslation(["transaction", "errors"]);
+  const { t, i18n } = useTranslation(["transaction", "errors"]);
   const navegar = useNavigate();
   const { data: contas, isError: contasComErro, error: erroContas } = useContas();
   const depositar = useDepositar();
@@ -71,31 +78,55 @@ export default function DepositPage() {
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-semibold">{t("transaction:depositTitle")}</h1>
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="deposito-conta">{t("transaction:account")}</Label>
-        <select
-          id="deposito-conta"
-          className="rounded border px-2 py-1"
-          value={contaId}
-          onChange={(evento) => setContaId(evento.target.value)}
-        >
-          <option value="" />
-          {(contas ?? []).map((conta) => (
-            <option key={conta.id} value={conta.id}>
-              {conta.alias ?? conta.number} · {conta.institution.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <TransferSteps
+        etapas={[
+          { id: "conta", rotulo: t("transaction:stepAccount"), feita: contaId !== "" },
+          {
+            id: "valor",
+            rotulo: t("transaction:stepAmount"),
+            feita: valorCentavos !== null && valorCentavos > 0,
+          },
+        ]}
+      />
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="deposito-valor">{t("transaction:value")}</Label>
-        <Input
-          id="deposito-valor"
-          inputMode="decimal"
-          value={valor}
-          onChange={(evento) => setValor(evento.target.value)}
-        />
+      {/* bloquearSemSaldo desligado: conta zerada e o destino mais util de um
+          deposito. O bloqueio existe para a ORIGEM de uma transferencia, onde
+          nao ha o que enviar — aqui seria um bug. */}
+      <SourceAccountPicker
+        contas={contas ?? []}
+        escolhida={contaId}
+        aoEscolher={setContaId}
+        rotulo={t("transaction:account")}
+        bloquearSemSaldo={false}
+      />
+
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex w-56 flex-col gap-2">
+          <Label htmlFor="deposito-valor">{t("transaction:value")}</Label>
+          {/* Mesmo desenho da transferencia: o estado e a string decimal
+              canonica, a mascara e so apresentacao. */}
+          <Input
+            id="deposito-valor"
+            inputMode="numeric"
+            className="text-lg"
+            placeholder={formatarDinheiro(0, i18n.language)}
+            value={
+              valorCentavos === null ? "" : formatarDinheiro(valorCentavos, i18n.language)
+            }
+            onChange={(evento) => {
+              const centavos = centavosDeDigitos(evento.target.value);
+              setValor(centavos === null ? "" : centavosParaDecimal(centavos));
+            }}
+          />
+        </div>
+
+        <Button
+          className="rounded-full bg-gradient-to-r from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] px-8 text-white"
+          onClick={() => void aoEnviar()}
+          disabled={incompleto || depositar.isPending}
+        >
+          {depositar.isPending ? t("transaction:sending") : t("transaction:send")}
+        </Button>
       </div>
 
       {erro && (
@@ -104,9 +135,6 @@ export default function DepositPage() {
         </Alert>
       )}
 
-      <Button onClick={() => void aoEnviar()} disabled={incompleto || depositar.isPending}>
-        {depositar.isPending ? t("transaction:sending") : t("transaction:send")}
-      </Button>
     </div>
   );
 }
