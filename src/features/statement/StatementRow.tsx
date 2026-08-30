@@ -57,11 +57,23 @@ export default function StatementRow({
         </p>
         </div>
       </div>
-      {/* O sinal continua: cor nao pode ser o unico portador do significado,
-          e quem nao distingue verde de cinza ainda precisa ler a linha. */}
+      {/* Entrada verde, saida vermelha — a convencao de qualquer app de
+          banco. Mas rose, nao text-destructive: o token destrutivo e o das
+          FALHAS (alertas de erro, status FAILED), e usar exatamente a mesma
+          cor faria "saiu dinheiro" e "deu problema" ficarem indistinguiveis
+          de relance. Sao dois vermelhos proximos e deliberadamente
+          diferentes.
+
+          O sinal continua em ambos: cor nao pode ser o unico portador do
+          significado, e quem nao distingue verde de vermelho ainda precisa
+          ler a linha. */}
       <p
         data-testid={`valor-${item.id}`}
-        className={`shrink-0 font-semibold ${entrada ? "text-green-600 dark:text-green-400" : ""}`}
+        className={`shrink-0 font-semibold ${
+          entrada
+            ? "text-green-600 dark:text-green-400"
+            : "text-rose-600 dark:text-rose-400"
+        }`}
       >
         {formatarDinheiro(sinal * centavos, locale)}
       </p>

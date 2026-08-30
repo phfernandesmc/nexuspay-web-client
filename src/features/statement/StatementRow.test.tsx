@@ -35,12 +35,16 @@ describe("linha do extrato", () => {
     expect(screen.getByTestId("valor-t1").className).toContain("text-green");
   });
 
-  it("saida NAO aparece em verde nem em vermelho", () => {
-    // Vermelho no app significa falha. Uma transferencia enviada com
-    // sucesso nao e um erro, e pinta-la de vermelho confundiria "saiu
-    // dinheiro" com "deu problema".
+  it("saida aparece em vermelho, mas NAO no vermelho de erro", () => {
+    // Entrada verde e saida vermelha e a convencao de app de banco, e vale
+    // mais que o receio de confundir com falha. O que se preserva daquele
+    // receio: o token DESTRUTIVO continua reservado a erros de verdade
+    // (alertas, status FAILED). Sao dois vermelhos proximos e
+    // deliberadamente diferentes — se alguem trocar por text-destructive,
+    // "saiu dinheiro" e "deu problema" viram a mesma cor.
     const classes = render(<StatementRow item={item("OUT")} />).container.innerHTML;
 
+    expect(screen.getByTestId("valor-t1").className).toContain("text-rose");
     expect(screen.getByTestId("valor-t1").className).not.toContain("text-green");
     expect(classes).not.toContain("text-destructive");
   });
