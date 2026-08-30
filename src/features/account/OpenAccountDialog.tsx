@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Modal from "@/components/layout/Modal";
-import InstitutionLogo from "@/features/institution/InstitutionLogo";
+import InstitutionPicker from "@/features/institution/InstitutionPicker";
 import { useAbrirConta, useInstituicoes } from "@/features/account/queries";
 import type { TipoConta } from "@/features/account/types";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
@@ -27,7 +27,6 @@ export default function OpenAccountDialog({
 
   if (!aberto) return null;
 
-  const escolhida = instituicoes?.find((i) => i.id === instituicaoId);
 
   async function aoConfirmar() {
     setErro(null);
@@ -45,21 +44,20 @@ export default function OpenAccountDialog({
 
   return (
     <Modal titulo={t("account:openTitle")} aoFechar={onFechar}>
+      {/* Mesma escolha por logo do formulario de contato. Eram os dois
+          unicos lugares onde se escolhe instituicao, e manter um <select> de
+          texto aqui fazia a mesma pergunta ter duas respostas visuais no
+          mesmo app. */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="instituicao">{t("account:institution")}</Label>
-        <select
-          id="instituicao"
-          className="rounded border px-2 py-1"
-          value={instituicaoId}
-          onChange={(e) => setInstituicaoId(e.target.value)}
-        >
-          <option value="" />
-          {instituicoes?.map((i) => (
-            <option key={i.id} value={i.id}>
-              {i.name}
-            </option>
-          ))}
-        </select>
+        <span id="rotulo-instituicao-conta" className="text-sm font-medium">
+          {t("account:institution")}
+        </span>
+        <InstitutionPicker
+          instituicoes={instituicoes ?? []}
+          escolhida={instituicaoId}
+          aoEscolher={setInstituicaoId}
+          rotuloId="rotulo-instituicao-conta"
+        />
       </div>
 
       <div className="mt-4 flex flex-col gap-2">
@@ -84,16 +82,6 @@ export default function OpenAccountDialog({
         <Alert variant="destructive" role="alert" className="mt-4">
           <AlertDescription>{erro}</AlertDescription>
         </Alert>
-      )}
-
-      {/* Previa da instituicao escolhida: o mesmo logo que aparecera no
-          cartao, para a escolha no <select> ter consequencia visivel antes
-          de confirmar. */}
-      {escolhida !== undefined && (
-        <div className="mt-4 flex items-center gap-3 rounded-lg border p-3">
-          <InstitutionLogo instituicao={escolhida} />
-          <span className="text-sm font-medium">{escolhida.name}</span>
-        </div>
       )}
 
       <div className="mt-6 flex gap-2">

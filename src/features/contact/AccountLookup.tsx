@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useInstituicoes } from "@/features/account/queries";
-import InstitutionLogo from "@/features/institution/InstitutionLogo";
+import InstitutionPicker from "@/features/institution/InstitutionPicker";
 import { useBuscarConta } from "@/features/contact/queries";
 import type { ResultadoBusca } from "@/features/contact/types";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
@@ -84,41 +84,12 @@ export default function AccountLookup({
         <span id="rotulo-instituicao" className="text-sm font-medium">
           {t("contact:institution")}
         </span>
-        <div
-          role="radiogroup"
-          aria-labelledby="rotulo-instituicao"
-          className="flex flex-wrap gap-2 p-1"
-        >
-          {(instituicoes ?? []).map((inst) => {
-            const marcada = inst.id === instituicaoId;
-            return (
-              <div
-                key={inst.id}
-                data-testid={`instituicao-${inst.id}`}
-                role="radio"
-                aria-checked={marcada}
-                aria-label={inst.name}
-                tabIndex={marcada ? 0 : -1}
-                onClick={() => setInstituicaoId(inst.id)}
-                onKeyDown={(evento) => {
-                  if (evento.key === " " || evento.key === "Enter") {
-                    evento.preventDefault();
-                    setInstituicaoId(inst.id);
-                  }
-                }}
-                className={`flex cursor-pointer items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm hover:bg-muted ${
-                  marcada ? "ring-2 ring-[var(--marca-2)]" : ""
-                }`}
-              >
-                {/* Sem override de tamanho: InstitutionLogo concatena
-                    classes sem tailwind-merge, entao size-7 e size-10
-                    colidiriam e o vencedor dependeria da ordem no CSS. */}
-                <InstitutionLogo instituicao={inst} />
-                <span className="truncate">{inst.name}</span>
-              </div>
-            );
-          })}
-        </div>
+        <InstitutionPicker
+          instituicoes={instituicoes ?? []}
+          escolhida={instituicaoId}
+          aoEscolher={setInstituicaoId}
+          rotuloId="rotulo-instituicao"
+        />
       </div>
 
       <div className="flex flex-wrap gap-3">

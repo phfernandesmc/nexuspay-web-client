@@ -66,13 +66,14 @@ describe("abrir conta", () => {
     // O <select> ja existe no DOM antes do /institutions responder, entao
     // findByLabelText por si so retorna cedo demais; esperar a option pelo
     // nome garante que a lista de instituicoes ja chegou.
-    await screen.findByRole("option", { name: instituicao.name });
+    await screen.findByTestId(`instituicao-${instituicao.id}`);
     // A montagem de ListaObservada ja dispara uma listagem inicial; guarda
     // esse numero para so contar o que acontece DEPOIS de abrir a conta.
     await waitFor(() => expect(listagens).toBeGreaterThanOrEqual(1));
     const antes = listagens;
 
-    await userEvent.selectOptions(screen.getByLabelText("Instituição"), instituicao.id);
+    // O banco virou escolha por logo, como no formulario de contato.
+    await userEvent.click(screen.getByTestId(`instituicao-${instituicao.id}`));
     await userEvent.click(screen.getByRole("button", { name: "Abrir" }));
 
     await waitFor(() => expect(listagens).toBeGreaterThan(antes));
@@ -91,8 +92,9 @@ describe("abrir conta", () => {
 
     envolverComQuery(<OpenAccountDialog aberto onFechar={() => {}} />);
     await screen.findByLabelText("Instituição");
-    await screen.findByRole("option", { name: instituicao.name });
-    await userEvent.selectOptions(screen.getByLabelText("Instituição"), instituicao.id);
+    await screen.findByTestId(`instituicao-${instituicao.id}`);
+    // O banco virou escolha por logo, como no formulario de contato.
+    await userEvent.click(screen.getByTestId(`instituicao-${instituicao.id}`));
     await userEvent.click(screen.getByRole("button", { name: "Abrir" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -113,8 +115,9 @@ describe("abrir conta", () => {
 
     envolverComQuery(<OpenAccountDialog aberto onFechar={() => {}} />);
     await screen.findByLabelText("Instituição");
-    await screen.findByRole("option", { name: instituicao.name });
-    await userEvent.selectOptions(screen.getByLabelText("Instituição"), instituicao.id);
+    await screen.findByTestId(`instituicao-${instituicao.id}`);
+    // O banco virou escolha por logo, como no formulario de contato.
+    await userEvent.click(screen.getByTestId(`instituicao-${instituicao.id}`));
     await userEvent.click(screen.getByRole("button", { name: "Abrir" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Instituição não encontrada.");
