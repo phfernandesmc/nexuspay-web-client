@@ -18,15 +18,22 @@ export default function Modal({
 }) {
   const refCartao = useRef<HTMLDivElement>(null);
 
+  // DUAS coisas separadas de proposito. Juntas num efeito com [aoFechar],
+  // o foco era devolvido ao cartao a cada render — e como aoFechar costuma
+  // ser uma funcao recriada pelo componente pai, isso acontecia a CADA
+  // TECLA. O sintoma era um campo dentro do modal que aceitava so o
+  // primeiro caractere.
+  useEffect(() => {
+    // Foco para dentro ao abrir, uma vez: sem isso ele fica no botao que
+    // abriu o modal, atras da sobreposicao.
+    refCartao.current?.focus();
+  }, []);
+
   useEffect(() => {
     function aoTeclar(evento: KeyboardEvent) {
       if (evento.key === "Escape") aoFechar();
     }
     document.addEventListener("keydown", aoTeclar);
-    // Leva o foco para dentro ao abrir: sem isso ele continua no botao que
-    // abriu o modal, atras da sobreposicao, e a primeira tecla age na
-    // pagina de baixo.
-    refCartao.current?.focus();
     return () => document.removeEventListener("keydown", aoTeclar);
   }, [aoFechar]);
 
