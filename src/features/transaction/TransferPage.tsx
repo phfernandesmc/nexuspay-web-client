@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { useContas } from "@/features/account/queries";
 import AccountLookup from "@/features/contact/AccountLookup";
 import { useContatos } from "@/features/contact/queries";
 import type { ResultadoBusca } from "@/features/contact/types";
+import SourceAccountPicker from "@/features/transaction/SourceAccountPicker";
 import TransferSteps from "@/features/transaction/TransferSteps";
 import { useChaveDeIntencao } from "@/features/transaction/idempotency";
 import { useTransferir } from "@/features/transaction/queries";
@@ -71,14 +71,6 @@ export default function TransferPage() {
   // "conta-2", o botao ficaria habilitavel, e o envio mandaria origem ==
   // destino — exatamente o erro que o filtro deveria eliminar por
   // construcao (SAME_ACCOUNT_TRANSFER por outra porta).
-  function aoTrocarOrigem(evento: ChangeEvent<HTMLSelectElement>) {
-    const novaOrigemId = evento.target.value;
-    setOrigemId(novaOrigemId);
-    if (novaOrigemId !== "" && novaOrigemId === contatoId) {
-      setContatoId("");
-    }
-  }
-
   async function aoEnviar() {
     setErro(null);
     try {
@@ -130,25 +122,19 @@ export default function TransferPage() {
         valor={valorCentavos !== null && valorCentavos > 0}
       />
 
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="transferencia-origem">{t("transaction:source")}</Label>
-        <select
-          id="transferencia-origem"
-          className="rounded border px-2 py-1"
-          value={origemId}
-          onChange={aoTrocarOrigem}
-        >
-          <option value="" />
-          {(contas ?? []).map((conta) => (
-            <option key={conta.id} value={conta.id}>
-              {conta.alias ?? conta.number} · {conta.institution.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SourceAccountPicker
+        contas={contas ?? []}
+        escolhida={origemId}
+        aoEscolher={(novaOrigemId) => {
+          setOrigemId(novaOrigemId);
+          // Mesma regra do <select> anterior: se a nova origem era o
+          // destino, o destino some — ninguem transfere para si mesmo.
+          if (novaOrigemId !== "" && novaOrigemId === contatoId) setContatoId("");
+        }}
+      />
 
       {disponivelCentavos !== null && (
-        <p className="text-sm text-muted-foreground">
+        <p data-testid="disponivel-origem" className="text-sm text-muted-foreground">
           {t("transaction:available")}: {formatarDinheiro(disponivelCentavos, i18n.language)}
         </p>
       )}

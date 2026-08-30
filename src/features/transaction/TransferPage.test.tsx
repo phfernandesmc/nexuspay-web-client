@@ -150,12 +150,9 @@ type Usuario = ReturnType<typeof userEvent.setup>;
  * mudou, e isso merece conversa, nao ajuste.
  */
 async function escolherOrigem(usuario: Usuario, id: string = conta.id) {
-  // Escopado ao select de origem: antes de uma origem ser escolhida, o
-  // destino tambem lista "Principal" entre as contas proprias (nada foi
-  // excluido ainda), entao um findByRole global neste nome fica ambiguo.
-  const origem = screen.getByLabelText("Conta de origem");
-  await within(origem).findByRole("option", { name: /Principal/ });
-  await usuario.selectOptions(origem, id);
+  // A origem virou um radiogroup de cartoes; o caminho ate ela mudou, as
+  // provas nao.
+  await usuario.click(await screen.findByTestId(`origem-${id}`));
 }
 
 async function escolherDestino(usuario: Usuario, id: string) {
@@ -476,7 +473,15 @@ describe("transferencia", () => {
 
     // conta.balance e "500.00" e conta.pending_outgoing e "100.00" no
     // fixture: o disponivel precisa ser 400,00, nao 500,00.
-    expect(await screen.findByText(/400,00/)).toBeInTheDocument();
+    //
+    // Checa os DOIS lugares em que ele aparece — o cartao da conta e a linha
+    // abaixo — em vez de um findByText solto, que estoura por ambiguidade
+    // desde que o cartao passou a mostrar o saldo. A prova ficou mais
+    // especifica, nao mais frouxa: antes bastava o numero existir em algum
+    // lugar da tela.
+    const cartao = await screen.findByTestId(`origem-${conta.id}`);
+    expect(within(cartao).getByText(/400,00/)).toBeInTheDocument();
+    expect(screen.getByTestId("disponivel-origem")).toHaveTextContent(/400,00/);
     expect(consultouExtrato).toBe(false);
   });
 
@@ -694,5 +699,23 @@ describe("transferencia", () => {
     await usuario.type(screen.getByLabelText("Valor"), "999999.00");
 
     expect(screen.getByTestId("etapa-valor")).toHaveAttribute("data-concluida", "true");
+  });
+
+  it("a origem e um grupo de radio, nao botoes soltos", async () => {
+    // Trocar o <select> por cartoes clicaveis perderia navegacao por setas e
+    // o anuncio de "selecionado" — uma regressao vestida de melhoria. O
+    // radiogroup devolve as duas coisas.
+    montar();
+    const usuario = userEvent.setup();
+
+    const grupo = await screen.findByRole("radiogroup", { name: "Conta de origem" });
+    // findAll, nao getAll: o grupo existe antes de as contas chegarem.
+    const opcoes = await within(grupo).findAllByRole("radio");
+    expect(opcoes.length).toBeGreaterThan(0);
+    expect(opcoes.every((o) => o.getAttribute("aria-checked") === "false")).toBe(true);
+
+    await usuario.click(screen.getByTestId(`origem-${conta.id}`));
+
+    expect(screen.getByTestId(`origem-${conta.id}`)).toHaveAttribute("aria-checked", "true");
   });
 });
