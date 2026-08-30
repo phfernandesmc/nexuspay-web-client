@@ -141,3 +141,22 @@
     @apply font-sans;
     }
 }
+
+@layer base {
+    /*
+     * Devolve o cursor de clique aos botoes.
+     *
+     * O Tailwind 4 mudou o preflight: <button> passou a usar cursor:default,
+     * alinhado ao padrao do navegador. O efeito e que NENHUM botao do app
+     * sinaliza que e clicavel — um defeito que nao quebra teste nenhum e so
+     * aparece quando alguem passa o mouse.
+     *
+     * Global, e nao no componente Button, para alcancar tambem os <button>
+     * crus (o "Mostrar" da senha, o hamburguer da landing). Desabilitado
+     * fica de fora: ali o cursor certo e o padrao.
+     */
+    button:not(:disabled),
+    [role="button"]:not([aria-disabled="true"]) {
+        cursor: pointer;
+    }
+}
