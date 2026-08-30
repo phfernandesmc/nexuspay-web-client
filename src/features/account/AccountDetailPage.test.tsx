@@ -239,4 +239,28 @@ describe("detalhe da conta", () => {
       screen.queryByRole("button", { name: "Transferir entre minhas contas" }),
     ).toBeNull();
   });
+
+  it("abre o dialogo de transferencia quando se chega com essa intencao", async () => {
+    // Vindo da tela de contas: a origem foi escolhida navegando, e o dialogo
+    // ja aparece aberto para nao pedir o mesmo clique duas vezes.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts/${conta.id}`, () => HttpResponse.json(conta)),
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta])),
+    );
+    envolverComQuery(
+      <MemoryRouter
+        initialEntries={[
+          { pathname: `/contas/${conta.id}`, state: { transferirAgora: true } },
+        ]}
+      >
+        <Routes>
+          <Route path="/contas/:id" element={<AccountDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: "Transferir entre minhas contas" }),
+    ).toBeInTheDocument();
+  });
 });

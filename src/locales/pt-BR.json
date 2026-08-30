@@ -102,7 +102,8 @@
     "available": "Disponível",
     "totalBalance": "Saldo total",
     "backToList": "Todas as contas",
-    "ownTransfer": "Transferir entre minhas contas"
+    "ownTransfer": "Transferir entre minhas contas",
+    "chooseSource": "De qual conta?"
   },
   "statement": {
     "title": "Extrato",

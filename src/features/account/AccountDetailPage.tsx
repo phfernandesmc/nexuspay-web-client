@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useLocation, useParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Archive, ArrowLeft, ArrowLeftRight, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,17 @@ export default function AccountDetailPage() {
   const { data: conta, isPending, isError, error } = useConta(id);
   const [renomeando, setRenomeando] = useState(false);
   const [encerrando, setEncerrando] = useState(false);
-  const [transferindo, setTransferindo] = useState(false);
+  const local = useLocation();
+  /**
+   * Vindo da tela de contas, o dialogo ja abre.
+   *
+   * Lido uma vez, no estado inicial: se dependesse de local.state a cada
+   * render, fechar o dialogo o reabriria no render seguinte, porque o state
+   * da navegacao continua ali.
+   */
+  const [transferindo, setTransferindo] = useState(
+    () => (local.state as { transferirAgora?: boolean } | null)?.transferirAgora === true,
+  );
 
   if (isPending) return <p>{t("common:loading")}</p>;
 

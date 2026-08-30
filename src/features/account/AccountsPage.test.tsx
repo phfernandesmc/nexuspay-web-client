@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { http as mswHttp, HttpResponse } from "msw";
@@ -175,5 +175,38 @@ describe("lista de contas", () => {
     // O titulo do dialogo ("Abrir uma conta") e diferente do rotulo do
     // gatilho ("Abrir conta"): sao chaves distintas no catalogo.
     expect(await screen.findByRole("dialog", { name: "Abrir uma conta" })).toBeInTheDocument();
+  });
+
+  it("oferece transferir entre contas proprias, listando so as elegiveis", async () => {
+    // A escolha da origem e um LINK para o detalhe daquela conta, nao estado
+    // de formulario: e o que evita trazer de volta as regras cruzadas entre
+    // origem e destino que sairam da tela de transferencia.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () =>
+        // Duas elegiveis: com uma so nao ha para onde transferir, e o botao
+        // nao aparece — regra da propria tela.
+        HttpResponse.json([
+          conta,
+          { ...conta, id: "c-outra", alias: "Reserva" },
+          { ...conta, id: "c-zerada", alias: "Zerada", balance: "0.00" },
+          { ...conta, id: "c-encerrada", alias: "Antiga", status: "CLOSED" },
+        ]),
+      ),
+    );
+    montar();
+    const usuario = userEvent.setup();
+
+    await usuario.click(
+      await screen.findByRole("button", { name: "Transferir entre minhas contas" }),
+    );
+
+    // Escopado ao dialogo: os cartoes da lista atras dele tambem sao links
+    // com os mesmos nomes, e uma busca global acha os dois.
+    const dialogo = within(screen.getByRole("dialog"));
+    expect(dialogo.getByRole("link", { name: /Salario/ })).toHaveAttribute(
+      "href", `/contas/${conta.id}`);
+    // Sem saldo nao ha o que enviar; encerrada nao opera.
+    expect(dialogo.queryByRole("link", { name: /Zerada/ })).toBeNull();
+    expect(dialogo.queryByRole("link", { name: /Antiga/ })).toBeNull();
   });
 });
