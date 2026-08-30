@@ -5,6 +5,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CheckCircle2, Clock, ReceiptText, XCircle } from "lucide-react";
 import { useSalvarContato } from "@/features/contact/queries";
 import { motivoTraduzivel, useTransacao } from "@/features/transaction/queries";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
@@ -26,6 +27,22 @@ export default function TransactionReceiptPage() {
   // segundo envio bateria em CONTACT_ALREADY_EXISTS por fazer exatamente o
   // que a tela ofereceu.
   const [contatoSalvo, setContatoSalvo] = useState(false);
+  const [espera, setEspera] = useState(0);
+
+  /**
+   * Cooldown do botao de atualizar.
+   *
+   * NAO e protecao contra bot: bot nao usa a interface, e quem o barra e o
+   * rate limit do gateway (DEFAULT_LIMIT, 60/minuto). Isto existe para quem
+   * esta ansioso esperando o dinheiro cair nao martelar o botao e levar um
+   * 429 na propria cara. Cinco segundos poem o teto em 12 requisicoes por
+   * minuto, folgado abaixo do limite do servidor.
+   */
+  useEffect(() => {
+    if (espera === 0) return;
+    const timer = setTimeout(() => setEspera((restante) => restante - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [espera]);
 
   // O history.state do navegador NAO se perde num recarregamento — ele fica
   // preso a entrada do historico de sessao, nao a montagem do componente
@@ -99,21 +116,46 @@ export default function TransactionReceiptPage() {
         </Alert>
       )}
 
-      <p>
-        {t("transaction:amount")}:{" "}
-        {formatarDinheiro(paraCentavos(transacao.amount), i18n.language)}
-      </p>
-      <p>
-        {t("transaction:type")}: {t(`transaction:${transacao.type}`)}
-      </p>
-      <p>
-        {t("transaction:when")}: {formatarDataHora(transacao.created_at, i18n.language)}
-      </p>
-      <p>
-        {t("transaction:statusLabel")}: {t(`transaction:${transacao.status}`)}
-      </p>
+      {/* O status e a pergunta que traz alguem aqui: "passou?". Antes ele era
+          uma linha igual as outras quatro. Agora e o bloco principal, e o
+          valor aparece junto porque as duas informacoes so fazem sentido
+          lidas ao mesmo tempo. */}
+      <section
+        className={`flex items-center gap-4 rounded-2xl border p-6 ${
+          transacao.status === "COMPLETED"
+            ? "border-green-600/30 bg-green-600/5"
+            : transacao.status === "FAILED"
+              ? "border-destructive/30 bg-destructive/5"
+              : "border-amber-500/30 bg-amber-500/5"
+        }`}
+      >
+        {/* aria-hidden: o estado ja esta escrito ao lado. O icone reforca
+            para quem ve e nao pode ser a unica forma de saber. */}
+        <span aria-hidden="true">
+          {transacao.status === "COMPLETED" ? (
+            <CheckCircle2 className="size-10 text-green-600 dark:text-green-400" />
+          ) : transacao.status === "FAILED" ? (
+            <XCircle className="size-10 text-destructive" />
+          ) : (
+            <Clock className="size-10 text-amber-600 dark:text-amber-400" />
+          )}
+        </span>
 
-      {transacao.status === "PENDING" && <p>{t("transaction:pendingExplained")}</p>}
+        <div className="min-w-0">
+          <p className="text-3xl font-bold">
+            {formatarDinheiro(paraCentavos(transacao.amount), i18n.language)}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {t("transaction:statusLabel")}: {t(`transaction:${transacao.status}`)}
+          </p>
+        </div>
+      </section>
+
+      {transacao.status === "PENDING" && (
+        <Alert role="status">
+          <AlertDescription>{t("transaction:pendingExplained")}</AlertDescription>
+        </Alert>
+      )}
 
       {transacao.status === "FAILED" && (
         <Alert variant="destructive" role="alert">
@@ -122,6 +164,19 @@ export default function TransactionReceiptPage() {
           </AlertDescription>
         </Alert>
       )}
+
+      <dl className="flex flex-col gap-3 rounded-2xl border p-6 text-sm">
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">{t("transaction:type")}</dt>
+          <dd className="font-medium">{t(`transaction:${transacao.type}`)}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-muted-foreground">{t("transaction:when")}</dt>
+          <dd className="font-medium">
+            {formatarDataHora(transacao.created_at, i18n.language)}
+          </dd>
+        </div>
+      </dl>
 
       {destinoNaoSalvo !== null && !contatoSalvo && !salvandoContato && (
         <Button variant="outline" onClick={() => setSalvandoContato(true)}>
@@ -169,10 +224,26 @@ export default function TransactionReceiptPage() {
         </div>
       )}
 
-      <div className="flex gap-2">
-        <Button onClick={() => void refetch()} disabled={isFetching}>
-          {isFetching ? t("transaction:refreshing") : t("transaction:refresh")}
-        </Button>
+      <div className="flex flex-wrap gap-2">
+        {/* So aparece em PENDING. COMPLETED e FAILED sao terminais — o
+            worker nao volta atras —, e um botao de atualizar ali sugere que
+            a resposta ainda pode mudar. */}
+        {transacao.status === "PENDING" && (
+          <Button
+            className="rounded-full bg-gradient-to-r from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] px-8 text-white"
+            onClick={() => {
+              setEspera(5);
+              void refetch();
+            }}
+            disabled={isFetching || espera > 0}
+          >
+            {isFetching
+              ? t("transaction:refreshing")
+              : espera > 0
+                ? t("transaction:refreshCooldown", { segundos: espera })
+                : t("transaction:refresh")}
+          </Button>
+        )}
         {/* Nao usa <Button render={<Link .../>}>: este controle NAVEGA, entao
         precisa continuar sendo um link de verdade (role="link", nao
         "button") para leitor de tela e Ctrl+clique/abrir em nova aba. O
@@ -183,8 +254,14 @@ export default function TransactionReceiptPage() {
         sem essa troca de semantica. */}
         <Link
           to={`/contas/${contaDoRecibo}`}
-          className={buttonVariants({ variant: "outline" })}
+          className={buttonVariants({
+            variant: "outline",
+            className:
+              "gap-2 rounded-full border-2 border-[var(--marca-2)] px-6 font-medium text-[var(--marca-2)] hover:bg-[var(--marca-suave)]",
+          })}
         >
+          {/* aria-hidden: o texto ao lado ja diz para onde leva. */}
+          <ReceiptText aria-hidden="true" className="size-4" />
           {t("transaction:backToStatement")}
         </Link>
       </div>

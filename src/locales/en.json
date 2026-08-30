@@ -187,7 +187,8 @@
     "searchContact": "Search contact",
     "searchPlaceholder": "Search...",
     "noMatch": "No contact found",
-    "clearAll": "Clear all"
+    "clearAll": "Clear all",
+    "refreshCooldown": "Wait {{segundos}}s"
   },
   "landing": {
     "nav": {

@@ -415,4 +415,57 @@ describe("recibo", () => {
       screen.queryByRole("button", { name: "Salvar destino como contato" }),
     ).not.toBeInTheDocument();
   });
+
+
+  it.each(["COMPLETED", "FAILED"])(
+    "nao mostra o botao de atualizar quando a transacao esta %s",
+    async (status) => {
+      // COMPLETED e FAILED sao terminais: o worker nao volta atras. Um botao
+      // de atualizar ali sugere que a resposta ainda pode mudar, e nao pode.
+      servidor.use(
+        mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () =>
+          HttpResponse.json(transacao({ status, failure_reason: null })),
+        ),
+      );
+      montar();
+      await screen.findByText(/R\$/);
+
+      expect(screen.queryByRole("button", { name: /Atualizar/ })).toBeNull();
+    },
+  );
+
+  it("atualizar entra em espera depois do clique", async () => {
+    // O cooldown NAO protege contra bot — bot nao usa a interface, e quem o
+    // barra e o rate limit do gateway (60/minuto). Ele existe para quem esta
+    // ansioso nao martelar o botao e levar um 429 na propria cara.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () =>
+        HttpResponse.json(transacao({ status: "PENDING" })),
+      ),
+    );
+    montar();
+    const usuario = userEvent.setup();
+    const botao = await screen.findByRole("button", { name: /Atualizar/ });
+
+    await usuario.click(botao);
+
+    expect(await screen.findByRole("button", { name: /\ds/ })).toBeDisabled();
+  });
+
+  it("voltar ao extrato e um LINK, nao um botao", async () => {
+    // O codigo tem um comentario longo explicando isto, e comentario nao
+    // impede ninguem de "padronizar" os botoes da tela. Este controle
+    // NAVEGA: precisa de role="link" para leitor de tela e para Ctrl+clique
+    // e abrir em nova aba funcionarem. Trocado por <Button>, tudo continua
+    // parecendo certo na tela e some para quem nao usa mouse.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () =>
+        HttpResponse.json(transacao({ status: "COMPLETED", failure_reason: null })),
+      ),
+    );
+    montar();
+
+    const voltar = await screen.findByRole("link", { name: /extrato/i });
+    expect(voltar).toHaveAttribute("href");
+  });
 });
