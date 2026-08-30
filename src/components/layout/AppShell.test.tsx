@@ -78,4 +78,22 @@ describe("estrutura do app", () => {
 
     expect(i18n.resolvedLanguage).toBe("en");
   });
+
+  it("o alternador de tema liga e desliga o escuro, e lembra a escolha", async () => {
+    localStorage.clear();
+    document.documentElement.classList.remove("dark");
+    montar();
+    const usuario = userEvent.setup();
+
+    await usuario.click(screen.getByRole("button", { name: "Ativar tema escuro" }));
+
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(localStorage.getItem("nexuspay.tema")).toBe("dark");
+
+    // O rotulo diz o que VAI acontecer: agora ele oferece voltar ao claro.
+    await usuario.click(screen.getByRole("button", { name: "Ativar tema claro" }));
+
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+    expect(localStorage.getItem("nexuspay.tema")).toBe("light");
+  });
 });

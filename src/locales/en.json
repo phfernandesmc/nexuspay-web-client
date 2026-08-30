@@ -10,7 +10,9 @@
     "transfer": "Transfer",
     "deposit": "Deposit",
     "back": "Back",
-    "openMenu": "Open menu"
+    "openMenu": "Open menu",
+    "themeDark": "Switch to dark theme",
+    "themeLight": "Switch to light theme"
   },
   "auth": {
     "login": {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Menu, X } from "lucide-react";
+import ThemeToggle from "@/components/layout/ThemeToggle";
 
 const SECOES = [
   { id: "arquitetura", chave: "landing:nav.architecture" },
@@ -35,6 +36,8 @@ export default function LandingHeader() {
             </a>
           ))}
         </nav>
+
+        <ThemeToggle />
 
         <Link
           to="/login"

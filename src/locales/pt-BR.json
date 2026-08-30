@@ -10,7 +10,9 @@
     "transfer": "Transferir",
     "deposit": "Depositar",
     "back": "Voltar",
-    "openMenu": "Abrir menu"
+    "openMenu": "Abrir menu",
+    "themeDark": "Ativar tema escuro",
+    "themeLight": "Ativar tema claro"
   },
   "auth": {
     "login": {

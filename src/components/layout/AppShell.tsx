@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { ChevronDown } from "lucide-react";
 import LanguageSwitch from "@/components/layout/LanguageSwitch";
+import ThemeToggle from "@/components/layout/ThemeToggle";
 import { sair } from "@/features/auth/api";
 import { useSession } from "@/features/auth/session.store";
 
@@ -110,6 +111,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
           </button>
 
           <div className="ml-auto flex items-center gap-4">
+            <ThemeToggle />
             <LanguageSwitch />
 
             <div ref={refConta} className="relative">
