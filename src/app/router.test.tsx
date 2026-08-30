@@ -29,6 +29,30 @@ beforeEach(async () => {
   window.history.pushState({}, "", "/");
 });
 
+/**
+ * O App sozinho nao provisiona o react-query — em producao quem envolve e
+ * main.tsx. Todas as telas autenticadas consomem consultas (a home virou
+ * painel e passou a consumir tambem), entao montar o App sem este provider
+ * cai em "No QueryClient set".
+ */
+/**
+ * Sair passou a viver dentro do menu da conta, entao sao dois passos: abrir
+ * o menu e escolher. Concentrado aqui para os testes de sessao nao
+ * dependerem cada um da estrutura do cabecalho.
+ */
+async function sair() {
+  await userEvent.click(screen.getByRole("button", { name: /Joao Silva/ }));
+  await userEvent.click(screen.getByRole("menuitem", { name: "Sair" }));
+}
+
+function montarApp() {
+  return render(
+    <QueryClientProvider client={criarQueryClient()}>
+      <App />
+    </QueryClientProvider>,
+  );
+}
+
 describe("roteamento", () => {
   it("em booting mostra tela neutra, NUNCA o login", async () => {
     let liberar: (() => void) | null = null;
@@ -41,7 +65,7 @@ describe("roteamento", () => {
       mswHttp.get(`${URL_TESTE}/auth/me`, () => HttpResponse.json(usuario)),
     );
 
-    render(<App />);
+    montarApp();
 
     // Este e o defeito classico da arquitetura: piscar o login para quem
     // esta autenticado. Nao aparece em desenvolvimento, so com rede lenta.
@@ -49,7 +73,7 @@ describe("roteamento", () => {
     expect(screen.getByText("Carregando")).toBeInTheDocument();
 
     liberar!();
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Início" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: /Olá/ })).toBeInTheDocument());
   });
 
   it("sem sessao a raiz mostra a landing, nao o login", async () => {
@@ -59,7 +83,7 @@ describe("roteamento", () => {
       ),
     );
 
-    render(<App />);
+    montarApp();
 
     expect(
       await screen.findByRole("heading", { name: /movido a eventos/i }),
@@ -77,7 +101,7 @@ describe("roteamento", () => {
       ),
     );
 
-    render(<App />);
+    montarApp();
 
     expect(await screen.findByText("Entrar na sua conta")).toBeInTheDocument();
   });
@@ -90,12 +114,12 @@ describe("roteamento", () => {
       mswHttp.get(`${URL_TESTE}/auth/me`, () => HttpResponse.json(usuario)),
     );
 
-    render(<App />);
-    await screen.findByRole("heading", { name: "Início" });
+    montarApp();
+    await screen.findByRole("heading", { name: /Olá/ });
 
-    await userEvent.selectOptions(screen.getByLabelText("Idioma"), "en");
+    await userEvent.click(screen.getByRole("button", { name: "EN" }));
 
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Home" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("heading", { name: /Hello/ })).toBeInTheDocument());
   });
 
   it("sair revoga a sessao NO SERVIDOR e volta ao login", async () => {
@@ -116,10 +140,10 @@ describe("roteamento", () => {
       }),
     );
 
-    render(<App />);
-    await screen.findByRole("heading", { name: "Início" });
+    montarApp();
+    await screen.findByRole("heading", { name: /Olá/ });
 
-    await userEvent.click(screen.getByRole("button", { name: "Sair" }));
+    await sair();
 
     expect(await screen.findByText("Entrar na sua conta")).toBeInTheDocument();
     expect(useSession.getState().status).toBe("anonymous");
@@ -138,10 +162,10 @@ describe("roteamento", () => {
       mswHttp.post(`${URL_TESTE}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
     );
 
-    render(<App />);
-    await screen.findByRole("heading", { name: "Início" });
+    montarApp();
+    await screen.findByRole("heading", { name: /Olá/ });
 
-    await userEvent.click(screen.getByRole("button", { name: "Sair" }));
+    await sair();
 
     expect(await screen.findByText("Entrar na sua conta")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -167,8 +191,8 @@ describe("roteamento", () => {
       ),
     );
 
-    render(<App />);
-    await screen.findByRole("heading", { name: "Início" });
+    montarApp();
+    await screen.findByRole("heading", { name: /Olá/ });
 
     // Uma requisicao qualquer da aplicacao autenticada tomando a revogacao.
     await expect(clienteHttp.get("/accounts")).rejects.toBeDefined();
@@ -181,17 +205,6 @@ describe("roteamento", () => {
 });
 
 describe("rotas de conta e dinheiro", () => {
-  // Estas duas rotas consomem react-query (useContas/useConta), que o
-  // App sozinho nao provisiona — em producao quem envolve e main.tsx. Sem
-  // este provider aqui, montar cai no erro "No QueryClient set".
-  function montarAutenticado() {
-    return render(
-      <QueryClientProvider client={criarQueryClient()}>
-        <App />
-      </QueryClientProvider>,
-    );
-  }
-
   beforeEach(() => {
     servidor.use(
       mswHttp.post(`${URL_TESTE}/auth/refresh`, () =>
@@ -205,7 +218,7 @@ describe("rotas de conta e dinheiro", () => {
     window.history.pushState({}, "", "/contas");
     servidor.use(mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([])));
 
-    montarAutenticado();
+    montarApp();
 
     expect(await screen.findByRole("heading", { name: "Suas contas" })).toBeInTheDocument();
   });
@@ -222,7 +235,7 @@ describe("rotas de conta e dinheiro", () => {
       ),
     );
 
-    montarAutenticado();
+    montarApp();
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Conta não encontrada.");
   });
@@ -234,7 +247,7 @@ describe("rotas de conta e dinheiro", () => {
       mswHttp.get(`${URL_TESTE}/contacts`, () => HttpResponse.json([])),
     );
 
-    montarAutenticado();
+    montarApp();
 
     expect(await screen.findByRole("heading", { name: "Transferir" })).toBeInTheDocument();
   });
@@ -256,7 +269,7 @@ describe("rotas de conta e dinheiro", () => {
       ),
     );
 
-    montarAutenticado();
+    montarApp();
 
     expect(await screen.findByRole("heading", { name: "Comprovante" })).toBeInTheDocument();
   });
@@ -275,9 +288,9 @@ describe("rotas de conta e dinheiro", () => {
       mswHttp.post(`${URL_TESTE}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
     );
 
-    render(<App />);
-    await screen.findByRole("heading", { name: "Início" });
-    await userEvent.click(screen.getByRole("button", { name: "Sair" }));
+    montarApp();
+    await screen.findByRole("heading", { name: /Olá/ });
+    await sair();
     await screen.findByText("Entrar na sua conta");
 
     await userEvent.click(screen.getByRole("link", { name: "Voltar" }));

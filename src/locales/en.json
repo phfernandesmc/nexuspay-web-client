@@ -9,7 +9,8 @@
     "contacts": "Contacts",
     "transfer": "Transfer",
     "deposit": "Deposit",
-    "back": "Back"
+    "back": "Back",
+    "openMenu": "Open menu"
   },
   "auth": {
     "login": {
@@ -214,5 +215,13 @@
       "gateway": "GitHub gateway",
       "worker": "GitHub worker"
     }
+  },
+  "home": {
+    "greeting": "Hello, {{nome}}",
+    "totalBalance": "Total balance",
+    "myAccounts": "My accounts",
+    "recentActivity": "Recent activity",
+    "noActivity": "No activity yet",
+    "shortcuts": "Quick actions"
   }
 }

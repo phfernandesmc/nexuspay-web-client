@@ -1,0 +1,47 @@
+import { describe, it, expect, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+import StatementRow from "@/features/statement/StatementRow";
+import type { ItemExtrato } from "@/features/statement/types";
+import i18n from "@/app/i18n";
+
+beforeEach(async () => {
+  await i18n.changeLanguage("pt-BR");
+});
+
+function item(direcao: "IN" | "OUT"): ItemExtrato {
+  return {
+    id: "t1",
+    type: "TRANSFER",
+    direction: direcao,
+    amount: "10.00",
+    status: "COMPLETED",
+    is_between_own_accounts: false,
+    counterparty: null,
+    created_at: "2026-08-20T10:00:00Z",
+  };
+}
+
+/**
+ * A assercao e sobre a classe, e nao sobre a cor computada, porque o Vitest
+ * roda com css:false — nenhum estilo do Tailwind e aplicado no jsdom, entao
+ * getComputedStyle devolveria vazio para qualquer variante. E o unico
+ * handle disponivel, e serve ao proposito: se alguem remover a coloracao,
+ * o teste acusa.
+ */
+describe("linha do extrato", () => {
+  it("entrada aparece em verde", () => {
+    render(<StatementRow item={item("IN")} />);
+
+    expect(screen.getByTestId("valor-t1").className).toContain("text-green");
+  });
+
+  it("saida NAO aparece em verde nem em vermelho", () => {
+    // Vermelho no app significa falha. Uma transferencia enviada com
+    // sucesso nao e um erro, e pinta-la de vermelho confundiria "saiu
+    // dinheiro" com "deu problema".
+    const classes = render(<StatementRow item={item("OUT")} />).container.innerHTML;
+
+    expect(screen.getByTestId("valor-t1").className).not.toContain("text-green");
+    expect(classes).not.toContain("text-destructive");
+  });
+});

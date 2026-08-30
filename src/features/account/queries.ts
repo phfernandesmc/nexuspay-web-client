@@ -19,6 +19,9 @@ export const CHAVES = {
   contas: () => ["contas"] as const,
   conta: (id: string) => ["conta", id] as const,
   extrato: (contaId: string) => ["extrato", contaId] as const,
+  // Depende das contas: uma conta aberta ou encerrada muda o conjunto de
+  // extratos que a atividade recente le, e a chave precisa mudar junto.
+  atividadeRecente: (contaIds: string[]) => ["atividade-recente", contaIds] as const,
   instituicoes: () => ["instituicoes"] as const,
   contatos: () => ["contatos"] as const,
   transacao: (id: string) => ["transacao", id] as const,

@@ -9,7 +9,8 @@
     "contacts": "Contatos",
     "transfer": "Transferir",
     "deposit": "Depositar",
-    "back": "Voltar"
+    "back": "Voltar",
+    "openMenu": "Abrir menu"
   },
   "auth": {
     "login": {
@@ -214,5 +215,13 @@
       "gateway": "GitHub Gateway",
       "worker": "GitHub Worker"
     }
+  },
+  "home": {
+    "greeting": "Olá, {{nome}}",
+    "totalBalance": "Saldo total",
+    "myAccounts": "Minhas Contas",
+    "recentActivity": "Atividade Recente",
+    "noActivity": "Nenhuma movimentação ainda",
+    "shortcuts": "Atalhos Rápidos"
   }
 }
