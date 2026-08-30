@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { paraCentavos, somarCentavos, formatarDinheiro } from "@/lib/money";
+import { paraCentavos, somarCentavos, formatarDinheiro, centavosDeDigitos, centavosParaDecimal } from "@/lib/money";
 
 describe("paraCentavos", () => {
   it("aceita string, que e como o Pydantic costuma serializar Decimal", () => {
@@ -103,5 +103,39 @@ describe("formatarDinheiro", () => {
   it("formata com o separador do locale", () => {
     expect(formatarDinheiro(123456, "pt-BR")).toContain("1.234,56");
     expect(formatarDinheiro(123456, "en")).toContain("1,234.56");
+  });
+});
+
+describe("mascara de dinheiro", () => {
+  it("le so os digitos e trata o ultimo par como centavos", () => {
+    // O usuario digita da direita para a esquerda, como em caixa
+    // eletronico: cada tecla empurra o valor uma casa.
+    expect(centavosDeDigitos("1")).toBe(1);
+    expect(centavosDeDigitos("100")).toBe(100);
+    expect(centavosDeDigitos("5077")).toBe(5077);
+    expect(centavosDeDigitos("100000")).toBe(100000);
+  });
+
+  it("ignora pontuacao, espaco e letra", () => {
+    // Colar "R$ 1.000,00" precisa dar 100000 centavos, nao erro.
+    expect(centavosDeDigitos("R$ 1.000,00")).toBe(100000);
+    expect(centavosDeDigitos("  50,77  ")).toBe(5077);
+  });
+
+  it("campo vazio nao vira zero", () => {
+    // Zero e um valor que o usuario pode ter escolhido; vazio e ausencia de
+    // escolha. Confundir os dois habilitaria o envio de um formulario em
+    // branco.
+    expect(centavosDeDigitos("")).toBeNull();
+    expect(centavosDeDigitos("abc")).toBeNull();
+  });
+
+  it("converte centavos para a string decimal que o gateway espera", () => {
+    // Sem passar por ponto flutuante: (0.07).toFixed(2) e seguro, mas
+    // dividir por 100 em cadeia nao e, e este e o valor que vai no payload.
+    expect(centavosParaDecimal(7)).toBe("0.07");
+    expect(centavosParaDecimal(5077)).toBe("50.77");
+    expect(centavosParaDecimal(100000)).toBe("1000.00");
+    expect(centavosParaDecimal(0)).toBe("0.00");
   });
 });

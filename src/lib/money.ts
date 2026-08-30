@@ -71,3 +71,29 @@ export function formatarDinheiro(centavos: number, locale: string): string {
     currency: "BRL",
   }).format(centavos / 100);
 }
+
+/**
+ * Le so os digitos do texto e trata o ultimo par como centavos.
+ *
+ * E o comportamento de caixa eletronico: cada tecla empurra o valor uma
+ * casa, e pontuacao digitada ou colada ("R$ 1.000,00") e ignorada em vez de
+ * virar erro. Devolve null para ausencia de digito — vazio e ausencia de
+ * escolha, e confundi-lo com zero habilitaria enviar formulario em branco.
+ */
+export function centavosDeDigitos(texto: string): number | null {
+  const digitos = texto.replace(/\D/g, "");
+  return digitos === "" ? null : Number(digitos);
+}
+
+/**
+ * Centavos para a string decimal que o gateway espera ("50.77").
+ *
+ * Montada a partir dos inteiros, sem dividir por 100: este e o valor que vai
+ * no payload e que alimenta a chave de idempotencia, e o residuo de ponto
+ * flutuante apareceria justamente ali.
+ */
+export function centavosParaDecimal(centavos: number): string {
+  const inteiros = Math.floor(Math.abs(centavos) / 100);
+  const resto = String(Math.abs(centavos) % 100).padStart(2, "0");
+  return `${centavos < 0 ? "-" : ""}${inteiros}.${resto}`;
+}
