@@ -48,4 +48,18 @@ describe("linha do extrato", () => {
     expect(screen.getByTestId("valor-t1").className).not.toContain("text-green");
     expect(classes).not.toContain("text-destructive");
   });
+
+  it("a seta acompanha a direcao do dinheiro", () => {
+    // Reforca o que o sinal e a cor ja dizem, para quem varre a lista sem
+    // ler. Nao acrescenta informacao nova: e por isso que o icone e
+    // aria-hidden — anuncia-lo faria o leitor de tela repetir "saida" logo
+    // antes de "-R$ 10,00".
+    const { unmount } = render(<StatementRow item={item("IN")} />);
+    expect(screen.getByTestId("direcao-IN")).toBeInTheDocument();
+    expect(screen.queryByTestId("direcao-OUT")).toBeNull();
+    unmount();
+
+    render(<StatementRow item={item("OUT")} />);
+    expect(screen.getByTestId("direcao-OUT")).toBeInTheDocument();
+  });
 });

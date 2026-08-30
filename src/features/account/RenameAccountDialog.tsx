@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Modal from "@/components/layout/Modal";
 import { useRenomearConta } from "@/features/account/queries";
 import type { Conta } from "@/features/account/types";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
@@ -35,7 +36,7 @@ export default function RenameAccountDialog({
   }
 
   return (
-    <div role="dialog" aria-label={t("account:rename")} className="rounded border p-4">
+    <Modal titulo={t("account:rename")} aoFechar={onFechar}>
       <div className="flex flex-col gap-2">
         <Label htmlFor="alias-renomear">{t("account:alias")}</Label>
         <Input
@@ -60,6 +61,6 @@ export default function RenameAccountDialog({
           {t("account:cancel")}
         </Button>
       </div>
-    </div>
+    </Modal>
   );
 }

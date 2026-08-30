@@ -116,7 +116,12 @@ describe("ciclo de vida de encerrar conta (criterio 6)", () => {
     // respondendo (nao "nao encontrada") e mostra o status encerrado.
     montar(`/contas/${conta.id}`);
 
-    const subtitulo = await screen.findByText(/Banco Um/);
-    expect(subtitulo).toHaveTextContent(/Encerrada$/);
+    // Antes o nome do banco e o status dividiam o mesmo <p>, e a assercao
+    // exigia os dois no mesmo elemento. Com o cartao, o banco e o titulo e o
+    // status e uma linha propria. O que este teste guarda continua sendo o
+    // mesmo: a conta encerrada segue acessivel E se identifica como
+    // encerrada — nao a estrutura do DOM que carrega isso.
+    await screen.findByText(/Banco Um/);
+    expect(await screen.findByText(/Encerrada/)).toBeInTheDocument();
   });
 });

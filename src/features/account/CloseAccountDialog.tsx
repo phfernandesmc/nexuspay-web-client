@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Modal from "@/components/layout/Modal";
 import { useEncerrarConta } from "@/features/account/queries";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 
@@ -37,7 +38,7 @@ export default function CloseAccountDialog({
   }
 
   return (
-    <div role="dialog" aria-label={t("account:close")} className="rounded border p-4">
+    <Modal titulo={t("account:close")} aoFechar={onFechar}>
       <p>{t("account:closeConfirm")}</p>
 
       {erro !== null && (
@@ -58,6 +59,6 @@ export default function CloseAccountDialog({
           {t("account:cancel")}
         </Button>
       </div>
-    </div>
+    </Modal>
   );
 }

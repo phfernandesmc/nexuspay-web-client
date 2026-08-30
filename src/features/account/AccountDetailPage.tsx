@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useParams } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Archive, Pencil } from "lucide-react";
+import BankCard from "@/features/institution/BankCard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useConta } from "@/features/account/queries";
 import RenameAccountDialog from "@/features/account/RenameAccountDialog";
@@ -35,26 +36,64 @@ export default function AccountDetailPage() {
   const locale = i18n.resolvedLanguage ?? "pt-BR";
 
   return (
-    <section>
-      <h1 className="text-2xl font-semibold">{conta.alias ?? t("account:noAlias")}</h1>
-      <p className="text-sm text-muted-foreground">
-        {conta.institution.name} · {t("account:branch")} {conta.branch} ·{" "}
-        {t("account:number")} {conta.number} · {t(ROTULO_TIPO[conta.type])}
-        {conta.status === "CLOSED" ? ` · ${t("account:closed")}` : ""}
-      </p>
+    <section className="flex flex-col gap-6">
+      {/* O mesmo cartao da lista de contas: a conta se parece consigo mesma
+          nas duas telas em que aparece. O apelido continua sendo o h1 da
+          pagina — o titulo dentro do cartao e quem da o nome ao documento
+          para leitor de tela e para a aba do navegador. */}
+      <div className="overflow-hidden rounded-2xl">
+        <BankCard
+          instituicao={conta.institution}
+          titulo={conta.institution.name}
+          acoes={
+            <div className="flex shrink-0 gap-1">
+              <button
+                type="button"
+                aria-label={t("account:rename")}
+                className="rounded-full p-2 hover:bg-white/20"
+                onClick={() => setRenomeando(true)}
+              >
+                <Pencil className="size-4" />
+              </button>
+              {/* Encerrar e irreversivel; vermelho no hover confirma a
+                  intencao no momento do clique, sem gritar o tempo todo. */}
+              <button
+                type="button"
+                aria-label={t("account:close")}
+                className="rounded-full p-2 hover:bg-red-900/40"
+                onClick={() => setEncerrando(true)}
+              >
+                <Archive className="size-4" />
+              </button>
+            </div>
+          }
+        >
+          {/* Apelido em elemento proprio: e o que distingue duas contas no
+              mesmo banco, e precisa ser localizavel sozinho. */}
+          <h1 className="mt-1 font-medium">{conta.alias ?? t("account:noAlias")}</h1>
+          <p className="text-sm text-white/80">
+            {t(ROTULO_TIPO[conta.type])}
+            {conta.status === "CLOSED" ? ` · ${t("account:closed")}` : ""}
+          </p>
 
-      <p className="mt-4 text-3xl font-semibold">
-        {formatarDinheiro(paraCentavos(conta.balance), locale)}
-      </p>
-      <PendingBalanceLine saldo={conta.balance} pendente={conta.pending_outgoing} />
+          <p className="mt-4 text-3xl font-bold">
+            {formatarDinheiro(paraCentavos(conta.balance), locale)}
+          </p>
+          <div className="text-white/90">
+            <PendingBalanceLine saldo={conta.balance} pendente={conta.pending_outgoing} />
+          </div>
 
-      <div className="mt-4 flex gap-2">
-        <Button variant="outline" onClick={() => setRenomeando(true)}>
-          {t("account:rename")}
-        </Button>
-        <Button variant="outline" onClick={() => setEncerrando(true)}>
-          {t("account:close")}
-        </Button>
+          <div className="mt-4 flex gap-8">
+            <div>
+              <p className="text-xs text-white/70">{t("account:branch")}</p>
+              <p className="font-semibold">{conta.branch}</p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-white/70">{t("account:number")}</p>
+              <p className="truncate font-semibold">{conta.number}</p>
+            </div>
+          </div>
+        </BankCard>
       </div>
 
       {/* Montagem condicional, nao so `aberto`: o dialogo guarda estado
@@ -69,7 +108,9 @@ export default function AccountDetailPage() {
         <CloseAccountDialog contaId={conta.id} aberto={encerrando} onFechar={() => setEncerrando(false)} />
       )}
 
-      <StatementList contaId={conta.id} />
+      <div className="rounded-2xl border p-6">
+        <StatementList contaId={conta.id} />
+      </div>
     </section>
   );
 }

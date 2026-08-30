@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import type { ItemExtrato } from "@/features/statement/types";
 import type { Conta } from "@/features/account/types";
 import InstitutionLogo from "@/features/institution/InstitutionLogo";
@@ -69,12 +70,23 @@ export default function StatementRow({
           ler a linha. */}
       <p
         data-testid={`valor-${item.id}`}
-        className={`shrink-0 font-semibold ${
+        className={`flex shrink-0 items-center gap-1 font-semibold ${
           entrada
             ? "text-green-600 dark:text-green-400"
             : "text-rose-600 dark:text-rose-400"
         }`}
       >
+        {/* Seta diagonal, a convencao de extrato bancario: entra vindo de
+            fora, sai indo para fora. aria-hidden porque nao acrescenta
+            informacao — o sinal ja esta no numero ao lado, e anunciar os
+            dois faria o leitor de tela dizer a mesma coisa duas vezes. */}
+        <span data-testid={`direcao-${item.direction}`} aria-hidden="true">
+          {entrada ? (
+            <ArrowDownLeft className="size-4" />
+          ) : (
+            <ArrowUpRight className="size-4" />
+          )}
+        </span>
         {formatarDinheiro(sinal * centavos, locale)}
       </p>
     </li>
