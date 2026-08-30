@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   ArrowDownToLine,
   ArrowLeftRight,
+  FileText,
   Home,
   Menu as MenuIcon,
   Users,
@@ -20,6 +21,7 @@ const DESTINOS = [
   { para: "/", chave: "common:home", Icone: Home },
   { para: "/contas", chave: "common:accounts", Icone: Wallet },
   { para: "/contatos", chave: "common:contacts", Icone: Users },
+  { para: "/extratos", chave: "common:statements", Icone: FileText },
   { para: "/transferir", chave: "common:transfer", Icone: ArrowLeftRight },
   { para: "/depositar", chave: "common:deposit", Icone: ArrowDownToLine },
 ] as const;

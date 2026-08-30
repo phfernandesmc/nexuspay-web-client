@@ -12,7 +12,8 @@
     "back": "Voltar",
     "openMenu": "Abrir menu",
     "themeDark": "Ativar tema escuro",
-    "themeLight": "Ativar tema claro"
+    "themeLight": "Ativar tema claro",
+    "statements": "Extratos"
   },
   "auth": {
     "login": {
@@ -117,7 +118,17 @@
     "deposit": "Depósito",
     "ownTransfer": "Entre suas contas",
     "processing": "Em processamento",
-    "available": "Disponível"
+    "available": "Disponível",
+    "reportTitle": "Extratos",
+    "allAccounts": "Todas as contas",
+    "thisMonth": "Este mês",
+    "lastMonth": "Mês passado",
+    "last90": "Últimos 90 dias",
+    "totalIn": "Entradas",
+    "totalOut": "Saídas",
+    "period": "Período",
+    "from": "De",
+    "to": "Até"
   },
   "contact": {
     "title": "Contatos",

@@ -28,3 +28,23 @@ export type PaginaExtrato = {
   items: ItemExtrato[];
   next_cursor: string | null;
 };
+
+export type TotaisDoPeriodo = {
+  /** Decimal do Pydantic: string ou numero. */
+  total_in: string | number;
+  total_out: string | number;
+};
+
+export type PaginaDoPeriodo = {
+  items: ItemExtrato[];
+  next_cursor: string | null;
+  /** Do periodo INTEIRO, nao da pagina. Nao somar no cliente. */
+  totals: TotaisDoPeriodo;
+};
+
+export type FiltroDePeriodo = {
+  date_from: string;
+  date_to: string;
+  /** Ausente significa TODAS as contas do usuario. */
+  account_id?: string;
+};

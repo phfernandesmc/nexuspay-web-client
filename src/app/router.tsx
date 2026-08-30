@@ -12,6 +12,7 @@ import AccountDetailPage from "@/features/account/AccountDetailPage";
 import ContactsPage from "@/features/contact/ContactsPage";
 import DepositPage from "@/features/transaction/DepositPage";
 import TransactionReceiptPage from "@/features/transaction/TransactionReceiptPage";
+import StatementReportPage from "@/features/statement/StatementReportPage";
 import TransferPage from "@/features/transaction/TransferPage";
 
 function TelaDeCarga() {
@@ -111,6 +112,18 @@ export default function Router() {
             autenticado ? (
               <AppShell>
                 <DepositPage />
+              </AppShell>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/extratos"
+          element={
+            autenticado ? (
+              <AppShell>
+                <StatementReportPage />
               </AppShell>
             ) : (
               <Navigate to="/login" replace />

@@ -22,6 +22,10 @@ export const CHAVES = {
   // Depende das contas: uma conta aberta ou encerrada muda o conjunto de
   // extratos que a atividade recente le, e a chave precisa mudar junto.
   atividadeRecente: (contaIds: string[]) => ["atividade-recente", contaIds] as const,
+  // O filtro inteiro entra na chave: trocar periodo ou conta e outra
+  // consulta, nao a mesma com outro conteudo.
+  extratoDoPeriodo: (filtro: { date_from: string; date_to: string; account_id?: string }) =>
+    ["extrato-periodo", filtro] as const,
   instituicoes: () => ["instituicoes"] as const,
   contatos: () => ["contatos"] as const,
   transacao: (id: string) => ["transacao", id] as const,

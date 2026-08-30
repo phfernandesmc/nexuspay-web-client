@@ -12,7 +12,8 @@
     "back": "Back",
     "openMenu": "Open menu",
     "themeDark": "Switch to dark theme",
-    "themeLight": "Switch to light theme"
+    "themeLight": "Switch to light theme",
+    "statements": "Statements"
   },
   "auth": {
     "login": {
@@ -117,7 +118,17 @@
     "deposit": "Deposit",
     "ownTransfer": "Between your accounts",
     "processing": "Processing",
-    "available": "Available"
+    "available": "Available",
+    "reportTitle": "Statements",
+    "allAccounts": "All accounts",
+    "thisMonth": "This month",
+    "lastMonth": "Last month",
+    "last90": "Last 90 days",
+    "totalIn": "Money in",
+    "totalOut": "Money out",
+    "period": "Period",
+    "from": "From",
+    "to": "To"
   },
   "contact": {
     "title": "Contacts",

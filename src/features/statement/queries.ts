@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { CHAVES, useContas } from "@/features/account/queries";
-import { buscarExtrato } from "@/features/statement/api";
+import { buscarExtrato, buscarExtratoDoPeriodo } from "@/features/statement/api";
+import type { FiltroDePeriodo } from "@/features/statement/types";
 import { juntarRecentes } from "@/features/statement/recentes";
 
 /**
@@ -49,5 +50,15 @@ export function useAtividadeRecente(limite = 5) {
       );
     },
     enabled: contas !== undefined,
+  });
+}
+
+/** Extrato de um periodo, paginado pelo cursor do gateway. */
+export function useExtratoDoPeriodo(filtro: FiltroDePeriodo) {
+  return useInfiniteQuery({
+    queryKey: CHAVES.extratoDoPeriodo(filtro),
+    queryFn: ({ pageParam }) => buscarExtratoDoPeriodo(filtro, pageParam),
+    initialPageParam: null as string | null,
+    getNextPageParam: (ultimaPagina) => ultimaPagina.next_cursor,
   });
 }
