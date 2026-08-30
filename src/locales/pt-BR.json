@@ -181,7 +181,12 @@
     "continue": "Continuar",
     "confirm": "Confirmar",
     "reviewTitle": "Confira antes de enviar",
-    "afterTransfer": "Disponível depois"
+    "afterTransfer": "Disponível depois",
+    "noBalance": "Sem saldo",
+    "suggested": "Sugeridos",
+    "searchContact": "Buscar contato",
+    "searchPlaceholder": "Buscar...",
+    "noMatch": "Nenhum contato encontrado"
   },
   "landing": {
     "nav": {

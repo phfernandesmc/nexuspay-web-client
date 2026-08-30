@@ -9,6 +9,7 @@ import { useContas } from "@/features/account/queries";
 import AccountLookup from "@/features/contact/AccountLookup";
 import { useContatos } from "@/features/contact/queries";
 import type { ResultadoBusca } from "@/features/contact/types";
+import { Search } from "lucide-react";
 import Modal from "@/components/layout/Modal";
 import SourceAccountPicker from "@/features/transaction/SourceAccountPicker";
 import TransferSteps from "@/features/transaction/TransferSteps";
@@ -31,15 +32,34 @@ export default function TransferPage() {
   const [valor, setValor] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [confirmando, setConfirmando] = useState(false);
+  const [busca, setBusca] = useState("");
 
   // As TRES entradas terminam no mesmo lugar: um account_id, que e o que o
   // gateway pede. Conta propria ja tem o id em maos; contato guarda o id da
   // conta alvo; a busca devolve o id.
   const destinoId =
     achada?.account_id ??
-    (contas ?? []).find((c) => c.id === contatoId)?.id ??
     (contatos ?? []).find((c) => c.id === contatoId)?.target_account.id ??
     "";
+
+  /**
+   * Transferencia entre contas PROPRIAS saiu desta tela.
+   *
+   * Ela pertence ao detalhe da conta, onde o usuario ja esta olhando saldos
+   * — ver docs/superpowers/follow-ups-transferencia.md. Com contas proprias
+   * fora, o destino e so de contatos, e o gateway recusa salvar a propria
+   * conta como contato (ContactOwnAccount): a origem nao pode aparecer
+   * entre os destinos nem por acidente, e as regras cruzadas que existiam
+   * para isso deixaram de ter o que proteger.
+   */
+  const filtro = busca.trim().toLowerCase();
+  const contatosVisiveis = (contatos ?? []).filter(
+    (c) =>
+      filtro === "" ||
+      c.alias.toLowerCase().includes(filtro) ||
+      c.target_account.holder_name.toLowerCase().includes(filtro),
+  );
+  const favoritos = (contatos ?? []).filter((c) => c.is_favorite);
 
   // A assinatura usa o MESMO valor que vai na requisicao (valor.trim()).
   // Editar so espaco em branco geraria chave nova para um payload identico,
@@ -52,10 +72,7 @@ export default function TransferPage() {
 
   const origem = (contas ?? []).find((c) => c.id === origemId);
   const destinoRotulo =
-    achada?.holder_name ??
-    (contas ?? []).find((c) => c.id === contatoId)?.alias ??
-    (contatos ?? []).find((c) => c.id === contatoId)?.alias ??
-    "";
+    achada?.holder_name ?? (contatos ?? []).find((c) => c.id === contatoId)?.alias ?? "";
   // O pendente vem junto com a conta. Ate a Fatia 3c isto era derivado de
   // uma consulta ao extrato com limit=100, e podia ficar MAIOR que o real.
   const disponivelCentavos =
@@ -133,12 +150,10 @@ export default function TransferPage() {
       <SourceAccountPicker
         contas={contas ?? []}
         escolhida={origemId}
-        aoEscolher={(novaOrigemId) => {
-          setOrigemId(novaOrigemId);
-          // Mesma regra do <select> anterior: se a nova origem era o
-          // destino, o destino some — ninguem transfere para si mesmo.
-          if (novaOrigemId !== "" && novaOrigemId === contatoId) setContatoId("");
-        }}
+        // Sem limpar o destino: ele so lista contatos, e um contato nunca e
+        // uma conta propria (o gateway recusa com ContactOwnAccount). A
+        // origem escolhida jamais coincide com o destino.
+        aoEscolher={setOrigemId}
       />
 
       {disponivelCentavos !== null && (
@@ -156,33 +171,109 @@ export default function TransferPage() {
            quatro provas sem ganho para o usuario. */
         <div className="grid gap-4 md:grid-cols-2">
         <div className="flex flex-col gap-2 rounded-xl border p-4">
-          <Label htmlFor="transferencia-destino">{t("transaction:destination")}</Label>
-          <select
-            id="transferencia-destino"
-            className="rounded border px-2 py-1"
-            value={contatoId}
-            onChange={(evento) => setContatoId(evento.target.value)}
-          >
-            <option value="" />
-            <optgroup label={t("transaction:myAccounts")}>
-              {(contas ?? [])
-                // A origem sai da lista: mandar para a mesma conta e recusado
-                // pelo gateway, e nao ha por que oferecer o erro.
-                .filter((c) => c.id !== origemId)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.alias ?? c.number} · {c.institution.name} · {c.number}
-                  </option>
-                ))}
-            </optgroup>
-            <optgroup label={t("transaction:myContacts")}>
-              {(contatos ?? []).map((contato) => (
-                <option key={contato.id} value={contato.id}>
-                  {contato.alias} · {contato.target_account.holder_name}
-                </option>
+          {/* Rotulo a esquerda e campo a direita, como o mockup: a busca e
+              um refinamento da lista abaixo, nao um campo de formulario a
+              preencher. */}
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="busca-contato" className="shrink-0">
+              {t("transaction:searchContact")}
+            </Label>
+            <div className="relative w-full max-w-xs">
+              <Input
+                id="busca-contato"
+                placeholder={t("transaction:searchPlaceholder")}
+                className="pr-9"
+                value={busca}
+                onChange={(evento) => setBusca(evento.target.value)}
+              />
+              <Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            </div>
+          </div>
+
+          {/* Sugerido = favorito. Nao ha criterio de "mais usado" a inventar:
+              o gateway nao expoe frequencia, e o usuario ja disse quem
+              importa ao marcar a estrela. */}
+          {favoritos.length > 0 && (
+            <div data-testid="sugestoes" className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="text-sm text-muted-foreground">
+                {t("transaction:suggested")}:
+              </span>
+              {favoritos.map((favorito) => (
+                <button
+                  key={favorito.id}
+                  type="button"
+                  onClick={() => setContatoId(favorito.id)}
+                  className={`flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm hover:bg-muted ${
+                    contatoId === favorito.id ? "ring-2 ring-[var(--marca-2)]" : ""
+                  }`}
+                >
+                  {/* Monograma no lugar da foto do mockup: o gateway nao
+                      guarda imagem de contato, e o mesmo padrao ja resolve o
+                      fallback do logo de banco. aria-hidden porque o nome vem
+                      escrito ao lado — sem isso o leitor de tela anunciaria a
+                      inicial e depois o nome. */}
+                  <span
+                    aria-hidden="true"
+                    className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] text-xs font-semibold text-white"
+                  >
+                    {favorito.alias.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="font-medium">{favorito.alias}</span>
+                </button>
               ))}
-            </optgroup>
-          </select>
+            </div>
+          )}
+
+          {/* Lista clicavel, e nao um <select>: com busca e sugeridos em
+              volta, o dropdown obrigava a filtrar e ainda abrir uma lista
+              para escolher. radiogroup pelo mesmo motivo do carrossel de
+              origem — escolha unica com navegacao e estado anunciados. */}
+          <div
+            role="radiogroup"
+            aria-label={t("transaction:destination")}
+            className="flex max-h-64 flex-col gap-1 overflow-y-auto"
+          >
+            {contatosVisiveis.map((contato) => {
+              const marcado = contato.id === contatoId;
+              return (
+                <div
+                  key={contato.id}
+                  data-testid={`destino-${contato.id}`}
+                  role="radio"
+                  aria-checked={marcado}
+                  tabIndex={marcado ? 0 : -1}
+                  onClick={() => setContatoId(contato.id)}
+                  onKeyDown={(evento) => {
+                    if (evento.key === " " || evento.key === "Enter") {
+                      evento.preventDefault();
+                      setContatoId(contato.id);
+                    }
+                  }}
+                  className={`flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-muted ${
+                    marcado ? "bg-muted ring-2 ring-[var(--marca-2)]" : ""
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] text-xs font-semibold text-white"
+                  >
+                    {contato.alias.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium">{contato.alias}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {contato.target_account.holder_name} ·{" "}
+                      {contato.target_account.institution.name}
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
+
+            {contatosVisiveis.length === 0 && (
+              <p className="p-2 text-sm text-muted-foreground">{t("transaction:noMatch")}</p>
+            )}
+          </div>
           {/* A falha de rede nao pode se disfarcar de "voce nao tem contatos":
               o select vazio ficaria identico ao "sem contatos salvos ainda".
               "Buscar outra conta" continua funcionando sem esta lista, entao
@@ -199,7 +290,19 @@ export default function TransferPage() {
         <div className="flex flex-col gap-2 rounded-xl border p-4">
           <p className="text-sm font-medium">{t("transaction:manualEntry")}</p>
           {buscando ? (
-            <AccountLookup onEncontrada={setAchada} />
+            <>
+              <AccountLookup onEncontrada={setAchada} />
+              {/* Sem isto a insercao manual e caminho so de ida: quem clicou
+                  por engano fica com o formulario de agencia e numero aberto
+                  e nenhuma forma de voltar aos contatos. */}
+              <Button
+                variant="ghost"
+                className="rounded-full"
+                onClick={() => setBuscando(false)}
+              >
+                {t("contact:cancel")}
+              </Button>
+            </>
           ) : (
             <Button variant="outline" onClick={() => setBuscando(true)}>
               {t("transaction:newAccount")}

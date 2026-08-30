@@ -181,7 +181,12 @@
     "continue": "Continue",
     "confirm": "Confirm",
     "reviewTitle": "Review before sending",
-    "afterTransfer": "Available afterwards"
+    "afterTransfer": "Available afterwards",
+    "noBalance": "No balance",
+    "suggested": "Suggested",
+    "searchContact": "Search contact",
+    "searchPlaceholder": "Search...",
+    "noMatch": "No contact found"
   },
   "landing": {
     "nav": {

@@ -156,7 +156,8 @@ async function escolherOrigem(usuario: Usuario, id: string = conta.id) {
 }
 
 async function escolherDestino(usuario: Usuario, id: string) {
-  await usuario.selectOptions(screen.getByLabelText("Destino"), id);
+  // O destino virou uma lista clicavel; o caminho mudou, as provas nao.
+  await usuario.click(await screen.findByTestId(`destino-${id}`));
 }
 
 /** O botao que dispara a transferencia. Usado tambem pelas assercoes de
@@ -186,7 +187,7 @@ describe("transferencia", () => {
     montar();
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
-    await screen.findByRole("option", { name: /Maria/ });
+    await screen.findByTestId(`destino-${contato.id}`);
     await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await enviar(usuario);
@@ -264,7 +265,7 @@ describe("transferencia", () => {
     montar();
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
-    await screen.findByRole("option", { name: /Maria/ });
+    await screen.findByTestId(`destino-${contato.id}`);
     await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "999999.00");
 
@@ -295,7 +296,7 @@ describe("transferencia", () => {
     montar();
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
-    await screen.findByRole("option", { name: /Maria/ });
+    await screen.findByTestId(`destino-${contato.id}`);
     await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await enviar(usuario);
@@ -318,7 +319,7 @@ describe("transferencia", () => {
     montar();
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
-    await screen.findByRole("option", { name: /Maria/ });
+    await screen.findByTestId(`destino-${contato.id}`);
     await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await enviar(usuario);
@@ -347,7 +348,7 @@ describe("transferencia", () => {
     montar();
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
-    await screen.findByRole("option", { name: /Maria/ });
+    await screen.findByTestId(`destino-${contato.id}`);
     await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
 
@@ -410,7 +411,7 @@ describe("transferencia", () => {
     montar();
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
-    await screen.findByRole("option", { name: /Maria/ });
+    await screen.findByTestId(`destino-${contato.id}`);
     await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await enviar(usuario);
@@ -441,7 +442,7 @@ describe("transferencia", () => {
     montar();
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
-    await screen.findByRole("option", { name: /Maria/ });
+    await screen.findByTestId(`destino-${contato.id}`);
     await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await enviar(usuario);
@@ -530,165 +531,12 @@ describe("transferencia", () => {
     await waitFor(() => expect(buscasDestino).toBeGreaterThanOrEqual(1));
     const antes = buscasDestino;
 
-    await screen.findByRole("option", { name: /Maria/ });
+    await screen.findByTestId(`destino-${contato.id}`);
     await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
     await enviar(usuario);
 
     await waitFor(() => expect(buscasDestino).toBeGreaterThan(antes));
-  });
-
-  it("transfere para uma conta propria sem passar pelo lookup", async () => {
-    let usouLookup = false;
-    let corpo: unknown = null;
-    servidor.use(
-      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
-      mswHttp.post(`${URL_TESTE}/contacts/lookup`, () => {
-        usouLookup = true;
-        return HttpResponse.json({});
-      }),
-      mswHttp.post(`${URL_TESTE}/transactions/transfer`, async ({ request }) => {
-        corpo = await request.json();
-        return respostaTransacao(202);
-      }),
-    );
-
-    montar();
-    const usuario = userEvent.setup();
-    await escolherOrigem(usuario);
-    // Escopado ao select de destino: "Reserva" tambem aparece no select de
-    // origem (a lista completa, sem filtro), entao um findByRole global
-    // neste nome fica ambiguo.
-    const destinoParaEnvio = screen.getByLabelText("Destino");
-    await within(destinoParaEnvio).findByRole("option", { name: /Reserva/ });
-    await usuario.selectOptions(destinoParaEnvio, "conta-2");
-    await usuario.type(screen.getByLabelText("Valor"), "100.00");
-    await enviar(usuario);
-
-    await waitFor(() =>
-      expect(corpo).toEqual({
-        source_account_id: conta.id,
-        destination_account_id: "conta-2",
-        amount: "100.00",
-      }),
-    );
-    // Conta propria nao precisa de busca: o id ja estava na tela.
-    expect(usouLookup).toBe(false);
-  });
-
-  it("a conta escolhida como origem NAO aparece entre os destinos", async () => {
-    // Mandar para a mesma conta e recusado pelo gateway com
-    // SAME_ACCOUNT_TRANSFER. Tirar a origem da lista elimina o erro por
-    // construcao, em vez de deixa-lo acontecer e traduzir a recusa.
-    servidor.use(
-      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
-    );
-
-    montar();
-    const usuario = userEvent.setup();
-    await escolherOrigem(usuario);
-
-    const destino = screen.getByLabelText("Destino");
-    await within(destino).findByRole("option", { name: /Reserva/ });
-    expect(
-      within(destino).queryByRole("option", { name: /Principal/ }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("o destino separa contas proprias e contatos em dois grupos distintos, cada um com a opcao certa", async () => {
-    // Criterio 1 do spec. Sem os dois <optgroup>, "Minhas contas" e "Meus
-    // contatos" ficam chaves orfas nos dois dicionarios de traducao sem
-    // nada acusar — nenhum outro teste desta pagina afirma que os grupos
-    // existem como grupos, so que as opcoes individuais aparecem.
-    servidor.use(
-      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
-    );
-
-    montar();
-    const usuario = userEvent.setup();
-    await escolherOrigem(usuario);
-    const destino = screen.getByLabelText("Destino") as HTMLSelectElement;
-    await within(destino).findByRole("option", { name: /Maria/ });
-
-    const grupos = destino.querySelectorAll("optgroup");
-    expect(grupos).toHaveLength(2);
-    expect(grupos[0].label).toBe("Minhas contas");
-    expect(grupos[1].label).toBe("Meus contatos");
-
-    expect(
-      within(grupos[0]).getByRole("option", { name: /Reserva/ }),
-    ).toBeInTheDocument();
-    expect(
-      within(grupos[1]).getByRole("option", { name: /Maria/ }),
-    ).toBeInTheDocument();
-  });
-
-  it("trocar a origem devolve a conta anterior a lista de destinos", async () => {
-    servidor.use(
-      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
-    );
-
-    montar();
-    const usuario = userEvent.setup();
-    await escolherOrigem(usuario);
-    const destino = screen.getByLabelText("Destino");
-    await within(destino).findByRole("option", { name: /Reserva/ });
-
-    await escolherOrigem(usuario, "conta-2");
-
-    expect(within(destino).getByRole("option", { name: /Principal/ })).toBeInTheDocument();
-    expect(
-      within(destino).queryByRole("option", { name: /Reserva/ }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("trocar a origem para a conta que era o destino limpa o destino, sem habilitar Enviar so com um valor", async () => {
-    // Round de correcao 1: o <option> do destino some do DOM quando a
-    // origem muda para a mesma conta, mas o ESTADO React (contatoId) nao se
-    // limpa sozinho. Sem este teste, o botao ficaria habilitavel com um
-    // destino fantasma == origem, e o envio bateria em SAME_ACCOUNT_TRANSFER
-    // por uma porta diferente da que o filtro deveria fechar.
-    servidor.use(
-      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, outraConta])),
-    );
-
-    montar();
-    const usuario = userEvent.setup();
-    await escolherOrigem(usuario);
-    const destino = screen.getByLabelText("Destino");
-    await within(destino).findByRole("option", { name: /Reserva/ });
-    await usuario.selectOptions(destino, "conta-2");
-
-    // Troca a origem PARA a conta que estava escolhida como destino.
-    await escolherOrigem(usuario, "conta-2");
-
-    expect(destino).toHaveValue("");
-
-    await usuario.type(screen.getByLabelText("Valor"), "100.00");
-    expect(botaoDeEnvio()).toBeDisabled();
-  });
-
-  it("trocar a origem para uma terceira conta preserva o destino ja escolhido", async () => {
-    // Contraparte do teste acima: a limpeza precisa ser condicional. Uma
-    // limpeza incondicional a cada troca de origem destruiria a escolha do
-    // usuario sem motivo — e este teste falha se a correcao virar isso.
-    servidor.use(
-      mswHttp.get(`${URL_TESTE}/accounts`, () =>
-        HttpResponse.json([conta, outraConta, terceiraConta]),
-      ),
-    );
-
-    montar();
-    const usuario = userEvent.setup();
-    await escolherOrigem(usuario);
-    const destino = screen.getByLabelText("Destino");
-    await within(destino).findByRole("option", { name: /Reserva/ });
-    await usuario.selectOptions(destino, "conta-2");
-
-    // Troca a origem para uma conta QUE NAO E o destino escolhido.
-    await escolherOrigem(usuario, "conta-3");
-
-    expect(destino).toHaveValue("conta-2");
   });
 
   it("valor acima do disponivel ainda CONCLUI a etapa do valor", async () => {
@@ -741,7 +589,7 @@ describe("transferencia", () => {
     montar();
     const usuario = userEvent.setup();
     await escolherOrigem(usuario);
-    await screen.findByRole("option", { name: /Maria/ });
+    await screen.findByTestId(`destino-${contato.id}`);
     await escolherDestino(usuario, contato.id);
     await usuario.type(screen.getByLabelText("Valor"), "100.00");
 
@@ -757,5 +605,152 @@ describe("transferencia", () => {
 
     await waitFor(() => expect(chaves).toHaveLength(2));
     expect(chaves[0]).toBe(chaves[1]);
+  });
+
+  it("conta com saldo zero nao pode ser escolhida como origem", async () => {
+    // Bloqueia pelo BALANCE, que vem do servidor — nao pelo disponivel, que
+    // e estimativa do cliente. Uma conta com saldo mas disponivel zerado por
+    // pendencias continua selecionavel: a pendencia pode falhar e liberar o
+    // valor, e quem decide isso e o gateway.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () =>
+        HttpResponse.json([conta, { ...outraConta, balance: "0.00", pending_outgoing: "0.00" }]),
+      ),
+    );
+    montar();
+    const usuario = userEvent.setup();
+
+    const vazia = await screen.findByTestId(`origem-${outraConta.id}`);
+    expect(vazia).toHaveAttribute("aria-disabled", "true");
+
+    await usuario.click(vazia);
+
+    expect(vazia).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("conta com saldo mas disponivel zerado por pendencia CONTINUA escolhivel", async () => {
+    // O par do teste acima: o cliente nao decide que a transferencia e
+    // impossivel usando a propria estimativa.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () =>
+        HttpResponse.json([{ ...conta, balance: "100.00", pending_outgoing: "100.00" }]),
+      ),
+    );
+    montar();
+    const usuario = userEvent.setup();
+
+    const comPendencia = await screen.findByTestId(`origem-${conta.id}`);
+    await usuario.click(comPendencia);
+
+    expect(comPendencia).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("a seta pula a conta sem saldo em vez de parar nela", async () => {
+    // Sem isto, quem navega so por teclado fica preso numa opcao que nao
+    // pode escolher — o bloqueio viraria um beco sem saida.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () =>
+        HttpResponse.json([
+          conta,
+          { ...outraConta, balance: "0.00", pending_outgoing: "0.00" },
+          terceiraConta,
+        ]),
+      ),
+    );
+    montar();
+    const usuario = userEvent.setup();
+
+    await usuario.click(await screen.findByTestId(`origem-${conta.id}`));
+    await usuario.keyboard("{ArrowRight}");
+
+    // Pula a do meio (sem saldo) e chega na terceira.
+    expect(screen.getByTestId(`origem-${terceiraConta.id}`)).toHaveAttribute(
+      "aria-checked", "true");
+  });
+
+  it("os favoritos aparecem como sugestao e escolhem o destino num clique", async () => {
+    // Sugerido = favorito. Nao inventa um criterio proprio de "mais usado",
+    // que exigiria dado que o gateway nao expoe; usa o que o usuario ja
+    // marcou.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/contacts`, () =>
+        HttpResponse.json([
+          { ...contato, id: "c-fav", alias: "Ana", is_favorite: true },
+          { ...contato, id: "c-comum", alias: "Bruno", is_favorite: false },
+        ]),
+      ),
+    );
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+
+    const sugestoes = await screen.findByTestId("sugestoes");
+    expect(within(sugestoes).getByRole("button", { name: /Ana/ })).toBeInTheDocument();
+    expect(within(sugestoes).queryByRole("button", { name: /Bruno/ })).toBeNull();
+
+    await usuario.click(within(sugestoes).getByRole("button", { name: /Ana/ }));
+
+    // O destino nao tem mais um <select> com value; o que se observa e o
+    // contato marcado na lista. O comportamento provado e o mesmo: clicar
+    // no sugerido escolhe aquele destino.
+    expect(screen.getByTestId("destino-c-fav")).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("a busca filtra os contatos por apelido e por titular", async () => {
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/contacts`, () =>
+        HttpResponse.json([
+          { ...contato, id: "c-ana", alias: "Ana" },
+          { ...contato, id: "c-bruno", alias: "Bruno" },
+        ]),
+      ),
+    );
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    await screen.findByTestId("destino-c-ana");
+
+    await usuario.type(screen.getByLabelText("Buscar contato"), "bru");
+
+    expect(screen.queryByTestId("destino-c-ana")).toBeNull();
+    expect(screen.getByTestId("destino-c-bruno")).toBeInTheDocument();
+  });
+
+  it("trocar a origem preserva o destino ja escolhido", async () => {
+    // Sobrevivente das regras cruzadas: o destino so lista contatos, e um
+    // contato nunca e conta propria, entao trocar a origem nunca precisa
+    // limpar o destino. O que este teste guarda e que a troca tambem nao
+    // limpe por engano — perder o destinatario ja escolhido no meio do
+    // preenchimento seria silencioso.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta, terceiraConta])),
+    );
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    await screen.findByTestId(`destino-${contato.id}`);
+    await escolherDestino(usuario, contato.id);
+
+    await escolherOrigem(usuario, terceiraConta.id);
+
+    expect(screen.getByTestId(`destino-${contato.id}`)).toHaveAttribute(
+      "aria-checked", "true");
+  });
+
+  it("cancelar a insercao manual volta para a escolha por contato", async () => {
+    // Sem isto, abrir a busca manual e um caminho so de ida: quem clicou por
+    // engano fica com o formulario de agencia e numero aberto e nenhuma
+    // forma de voltar aos contatos sem recarregar a pagina.
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    await usuario.click(screen.getByRole("button", { name: "Buscar outra conta" }));
+
+    expect(screen.getByLabelText("Agência")).toBeInTheDocument();
+
+    await usuario.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    expect(screen.queryByLabelText("Agência")).toBeNull();
+    expect(screen.getByRole("button", { name: "Buscar outra conta" })).toBeInTheDocument();
   });
 });
