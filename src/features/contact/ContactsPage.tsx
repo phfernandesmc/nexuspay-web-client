@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AddContactDialog from "@/features/contact/AddContactDialog";
 import ContactRow from "@/features/contact/ContactRow";
@@ -27,10 +27,7 @@ export default function ContactsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("contact:title")}</h1>
-        <Button onClick={() => setAdicionando(true)}>{t("contact:add")}</Button>
-      </div>
+      <h1 className="text-2xl font-semibold">{t("contact:title")}</h1>
 
       {adicionando && (
         <AddContactDialog aberto onFechar={() => setAdicionando(false)} />
@@ -44,13 +41,28 @@ export default function ContactsPage() {
         </Alert>
       )}
 
-      {!isPending && !isError && contatos.length === 0 && <p>{t("contact:empty")}</p>}
+      {!isPending && !isError && contatos.length === 0 && (
+        <p className="text-muted-foreground">{t("contact:empty")}</p>
+      )}
 
-      {!isPending && !isError && contatos.length > 0 && (
-        <ul className="flex flex-col gap-2">
+      {!isPending && !isError && (
+        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {ordenar(contatos).map((contato) => (
             <ContactRow key={contato.id} contato={contato} />
           ))}
+
+          {/* Mesmo convite da tela de contas: rotulo visivel alem do icone, e
+              ele proprio faz as vezes de estado vazio. */}
+          <li>
+            <button
+              type="button"
+              onClick={() => setAdicionando(true)}
+              className="flex h-full min-h-32 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed text-muted-foreground transition hover:border-[var(--marca-2)] hover:text-[var(--marca-2)]"
+            >
+              <Plus className="size-8" />
+              <span className="font-medium">{t("contact:add")}</span>
+            </button>
+          </li>
         </ul>
       )}
     </div>

@@ -23,7 +23,7 @@ function contato(id: string, alias: string, favorito: boolean) {
     target_account: {
       id: `conta-${id}`,
       branch: "0001",
-      number: "12345678",
+      number: "12345678-9",
       holder_name: "M**** S****",
       type: "CHECKING",
       status: "ACTIVE",
@@ -247,7 +247,7 @@ describe("lista de contatos", () => {
     await screen.findByRole("option", { name: instituicao.name });
     await usuario.selectOptions(screen.getByLabelText("Instituição"), instituicao.id);
     await usuario.type(screen.getByLabelText("Agência"), "0001");
-    await usuario.type(screen.getByLabelText("Número da conta"), "12345678");
+    await usuario.type(screen.getByLabelText("Número da conta"), "12345678-9");
     await usuario.click(screen.getByRole("button", { name: "Buscar" }));
 
     await screen.findByText(/M\*{4} S\*{4}/);

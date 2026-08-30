@@ -136,7 +136,11 @@
     "rename": "Rename",
     "remove": "Remove",
     "removeConfirm": "Remove this contact? This does not affect transfers already made.",
-    "removeConfirmButton": "Remove"
+    "removeConfirmButton": "Remove",
+    "branchPlaceholder": "0000",
+    "numberPlaceholder": "00000000-0",
+    "branchFormat": "The branch has exactly 4 digits (e.g. 0001).",
+    "numberFormat": "The number has 8 digits, a hyphen and the check digit (e.g. 12345678-9)."
   },
   "transaction": {
     "receiptTitle": "Receipt",

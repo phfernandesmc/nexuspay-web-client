@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Modal from "@/components/layout/Modal";
 import AccountLookup from "@/features/contact/AccountLookup";
 import { useSalvarContato } from "@/features/contact/queries";
 import type { ResultadoBusca } from "@/features/contact/types";
@@ -40,11 +41,9 @@ export default function AddContactDialog({
   }
 
   return (
-    <div role="dialog" aria-label={t("contact:addTitle")} className="rounded border p-4">
-      <h2 className="text-lg font-semibold">{t("contact:addTitle")}</h2>
-
+    <Modal titulo={t("contact:addTitle")} aoFechar={onFechar}>
       {achada === null ? (
-        <div className="mt-4">
+        <div>
           <AccountLookup onEncontrada={setAchada} />
         </div>
       ) : (
@@ -97,6 +96,6 @@ export default function AddContactDialog({
           {t("contact:cancel")}
         </Button>
       </div>
-    </div>
+    </Modal>
   );
 }

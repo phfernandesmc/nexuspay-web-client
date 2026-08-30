@@ -40,7 +40,11 @@ async function preencherBusca() {
   await screen.findByRole("option", { name: instituicao.name });
   await usuario.selectOptions(screen.getByLabelText("Instituição"), instituicao.id);
   await usuario.type(screen.getByLabelText("Agência"), "0001");
-  await usuario.type(screen.getByLabelText("Número da conta"), "12345678");
+  // Numero no formato que o gateway exige (^\\d{8}-\\d$). A fixture usava
+  // "12345678", sem hifen nem digito verificador — invalido de verdade, e
+  // passava so porque o MSW responde sem validar. Era o mock escondendo o
+  // contrato, exatamente o que o README do projeto avisa.
+  await usuario.type(screen.getByLabelText("Número da conta"), "12345678-9");
   await usuario.click(screen.getByRole("button", { name: "Buscar" }));
   return usuario;
 }
@@ -199,5 +203,31 @@ describe("adicionar contato", () => {
       i18n.t("ACCOUNT_NOT_FOUND", { ns: "errors" }),
     );
     expect(screen.queryByLabelText("Apelido")).not.toBeInTheDocument();
+  });
+
+  it("numero fora do formato NAO chega ao servidor", async () => {
+    // O caso real: "12345678" sem hifen e digito verificador. O gateway
+    // exige ^\\d{8}-\\d$ e devolvia 422 com a mensagem generica de
+    // VALIDATION_ERROR, que nao diz qual campo nem qual formato. A viagem
+    // ao servidor era desperdicada e o usuario ficava sem saber o que
+    // corrigir.
+    let buscou = false;
+    servidor.use(
+      mswHttp.post(`${URL_TESTE}/contacts/lookup`, () => {
+        buscou = true;
+        return HttpResponse.json(achada);
+      }),
+    );
+    envolverComQuery(<AddContactDialog aberto onFechar={() => {}} />);
+
+    const usuario = userEvent.setup();
+    await screen.findByRole("option", { name: instituicao.name });
+    await usuario.selectOptions(screen.getByLabelText("Instituição"), instituicao.id);
+    await usuario.type(screen.getByLabelText("Agência"), "0001");
+    await usuario.type(screen.getByLabelText("Número da conta"), "12345678");
+    await usuario.click(screen.getByRole("button", { name: "Buscar" }));
+
+    expect(buscou).toBe(false);
+    expect(await screen.findByText(/12345678-9/)).toBeInTheDocument();
   });
 });

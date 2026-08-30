@@ -27,9 +27,26 @@ export default function AccountLookup({
   const [agencia, setAgencia] = useState("");
   const [numero, setNumero] = useState("");
   const [erro, setErro] = useState<string | null>(null);
+  const [formato, setFormato] = useState<{ agencia?: string; numero?: string }>({});
+
+  /**
+   * O contrato do gateway, espelhado aqui: ContactLookupIn exige
+   * ^\d{4}$ na agencia e ^\d{8}-\d$ no numero. Sem esta checagem o
+   * formulario manda o que for e volta 422 com VALIDATION_ERROR, que nao
+   * diz qual campo nem qual formato — o usuario fica sem saber o que
+   * corrigir depois de uma viagem ao servidor.
+   */
+  function conferirFormato(): boolean {
+    const problemas: { agencia?: string; numero?: string } = {};
+    if (!/^\d{4}$/.test(agencia.trim())) problemas.agencia = t("contact:branchFormat");
+    if (!/^\d{8}-\d$/.test(numero.trim())) problemas.numero = t("contact:numberFormat");
+    setFormato(problemas);
+    return Object.keys(problemas).length === 0;
+  }
 
   async function aoBuscar() {
     setErro(null);
+    if (!conferirFormato()) return;
     try {
       const achada = await buscar.mutateAsync({
         institution_id: instituicaoId,
@@ -67,18 +84,32 @@ export default function AccountLookup({
         <Label htmlFor="busca-agencia">{t("contact:branch")}</Label>
         <Input
           id="busca-agencia"
+          inputMode="numeric"
+          maxLength={4}
+          placeholder={t("contact:branchPlaceholder")}
+          aria-describedby="busca-agencia-erro"
           value={agencia}
           onChange={(evento) => setAgencia(evento.target.value)}
         />
+        <p id="busca-agencia-erro" className="text-sm text-destructive">
+          {formato.agencia}
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="busca-numero">{t("contact:number")}</Label>
         <Input
           id="busca-numero"
+          inputMode="numeric"
+          maxLength={10}
+          placeholder={t("contact:numberPlaceholder")}
+          aria-describedby="busca-numero-erro"
           value={numero}
           onChange={(evento) => setNumero(evento.target.value)}
         />
+        <p id="busca-numero-erro" className="text-sm text-destructive">
+          {formato.numero}
+        </p>
       </div>
 
       {erro && (

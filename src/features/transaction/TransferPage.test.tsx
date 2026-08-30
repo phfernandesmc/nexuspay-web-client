@@ -15,7 +15,7 @@ const instituicao = { id: "inst-1", code: "001", name: "Banco Um", color_hex: "#
 const conta = {
   id: "conta-1",
   branch: "0001",
-  number: "12345678",
+  number: "12345678-9",
   alias: "Principal",
   type: "CHECKING",
   balance: "500.00",
@@ -205,7 +205,9 @@ describe("transferencia", () => {
     await screen.findByRole("option", { name: instituicao.name });
     await usuario.selectOptions(screen.getByLabelText("Instituição"), instituicao.id);
     await usuario.type(screen.getByLabelText("Agência"), "0003");
-    await usuario.type(screen.getByLabelText("Número da conta"), "99999999");
+    // Formato real do gateway: ^\\d{8}-\\d$. "99999999" passava porque o MSW
+    // responde sem validar — o mock escondia o contrato.
+    await usuario.type(screen.getByLabelText("Número da conta"), "99999999-9");
     await usuario.click(screen.getByRole("button", { name: "Buscar" }));
 
     expect(await screen.findByText("J**** P****")).toBeInTheDocument();

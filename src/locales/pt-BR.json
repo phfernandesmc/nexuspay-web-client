@@ -136,7 +136,11 @@
     "rename": "Renomear",
     "remove": "Remover",
     "removeConfirm": "Remover este contato? Isso não afeta transferências já feitas.",
-    "removeConfirmButton": "Remover"
+    "removeConfirmButton": "Remover",
+    "branchPlaceholder": "0000",
+    "numberPlaceholder": "00000000-0",
+    "branchFormat": "A agência tem exatamente 4 dígitos (ex.: 0001).",
+    "numberFormat": "O número tem 8 dígitos, hífen e o dígito verificador (ex.: 12345678-9)."
   },
   "transaction": {
     "receiptTitle": "Comprovante",
