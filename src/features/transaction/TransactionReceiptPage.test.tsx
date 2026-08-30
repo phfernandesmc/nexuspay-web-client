@@ -468,4 +468,41 @@ describe("recibo", () => {
     const voltar = await screen.findByRole("link", { name: /extrato/i });
     expect(voltar).toHaveAttribute("href");
   });
+
+  it("volta para a tela anterior quando ha historico no app", async () => {
+    // Botao, e nao link: "voltar" nao tem URL — vai para a entrada anterior
+    // do historico, seja ela qual for. Nao ha o que abrir em nova aba.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () =>
+        HttpResponse.json(transacao({ status: "COMPLETED", failure_reason: null })),
+      ),
+    );
+    envolverComQuery(
+      <MemoryRouter initialEntries={["/contas/conta-1", "/transacoes/tx-1"]} initialIndex={1}>
+        <Routes>
+          <Route path="/contas/:id" element={<p>tela anterior</p>} />
+          <Route path="/transacoes/:id" element={<TransactionReceiptPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await userEvent.click(await screen.findByRole("button", { name: "Voltar" }));
+
+    expect(await screen.findByText("tela anterior")).toBeInTheDocument();
+  });
+
+  it("NAO mostra voltar quando o recibo foi aberto direto pela URL", async () => {
+    // Sem historico no app, voltar levaria a pessoa para FORA dele — a
+    // pagina anterior do navegador. Um botao que sai do aplicativo e pior
+    // que botao nenhum.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/tx-1`, () =>
+        HttpResponse.json(transacao({ status: "COMPLETED", failure_reason: null })),
+      ),
+    );
+    montar();
+    await screen.findByText(/R\$/);
+
+    expect(screen.queryByRole("button", { name: "Voltar" })).toBeNull();
+  });
 });

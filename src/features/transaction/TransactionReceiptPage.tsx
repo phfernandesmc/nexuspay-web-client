@@ -5,7 +5,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, Clock, ReceiptText, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock, ReceiptText, XCircle } from "lucide-react";
 import { useSalvarContato } from "@/features/contact/queries";
 import { motivoTraduzivel, useTransacao } from "@/features/transaction/queries";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
@@ -13,7 +13,7 @@ import { formatarDataHora } from "@/lib/datetime";
 import { formatarDinheiro, paraCentavos } from "@/lib/money";
 
 export default function TransactionReceiptPage() {
-  const { t, i18n } = useTranslation(["transaction", "contact", "errors"]);
+  const { t, i18n } = useTranslation(["transaction", "contact", "errors", "common"]);
   const { id = "" } = useParams<{ id: string }>();
   const local = useLocation();
   const navegar = useNavigate();
@@ -225,6 +225,26 @@ export default function TransactionReceiptPage() {
       )}
 
       <div className="flex flex-wrap gap-2">
+        {/* BOTAO, ao contrario do link do extrato logo abaixo — e a excecao
+            que confirma a regra. "Voltar ao extrato" tem uma URL, entao
+            precisa ser <Link> para Ctrl+clique e leitor de tela. "Voltar"
+            NAO tem: ele vai para a entrada anterior do historico, seja ela
+            qual for, e nao ha o que abrir em nova aba.
+
+            key === "default" e a entrada inicial da sessao no react-router:
+            quem chegou colando a URL nao tem historico no app, e voltar o
+            levaria para FORA dele. Um botao que sai do aplicativo e pior que
+            botao nenhum. */}
+        {local.key !== "default" && (
+          <Button
+            variant="ghost"
+            className="gap-2 rounded-full"
+            onClick={() => navegar(-1)}
+          >
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            {t("common:back")}
+          </Button>
+        )}
         {/* So aparece em PENDING. COMPLETED e FAILED sao terminais — o
             worker nao volta atras —, e um botao de atualizar ali sugere que
             a resposta ainda pode mudar. */}
