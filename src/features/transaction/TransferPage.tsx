@@ -10,6 +10,7 @@ import { useContas } from "@/features/account/queries";
 import AccountLookup from "@/features/contact/AccountLookup";
 import { useContatos } from "@/features/contact/queries";
 import type { ResultadoBusca } from "@/features/contact/types";
+import TransferSteps from "@/features/transaction/TransferSteps";
 import { useChaveDeIntencao } from "@/features/transaction/idempotency";
 import { useTransferir } from "@/features/transaction/queries";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
@@ -117,6 +118,17 @@ export default function TransferPage() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-semibold">{t("transaction:transferTitle")}</h1>
+
+      {/* A etapa do valor conta como concluida mesmo ACIMA do disponivel.
+          Nao e descuido: o disponivel do cliente e estimativa (saldo menos
+          pendencias) e a autoridade e o gateway — a propria mensagem diz
+          "voce pode enviar mesmo assim". Marcar a etapa como pendente aqui
+          contradiria isso em silencio. */}
+      <TransferSteps
+        origem={origemId !== ""}
+        destino={destinoId !== ""}
+        valor={valorCentavos !== null && valorCentavos > 0}
+      />
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="transferencia-origem">{t("transaction:source")}</Label>

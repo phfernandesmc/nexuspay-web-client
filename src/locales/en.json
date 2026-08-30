@@ -172,7 +172,11 @@
     "available": "Available",
     "overAvailable": "The amount is higher than the calculated available balance. You can send anyway — the server decides.",
     "myAccounts": "My accounts",
-    "myContacts": "My contacts"
+    "myContacts": "My contacts",
+    "stepAccount": "Account",
+    "stepDestination": "Recipient",
+    "stepAmount": "Amount",
+    "stepsProgress": "Step {{feitas}} of {{total}}"
   },
   "landing": {
     "nav": {

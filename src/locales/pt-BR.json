@@ -172,7 +172,11 @@
     "available": "Disponível",
     "overAvailable": "O valor é maior que o disponível calculado. Você pode enviar mesmo assim — quem decide é o servidor.",
     "myAccounts": "Minhas contas",
-    "myContacts": "Meus contatos"
+    "myContacts": "Meus contatos",
+    "stepAccount": "Conta",
+    "stepDestination": "Destino",
+    "stepAmount": "Valor",
+    "stepsProgress": "Etapa {{feitas}} de {{total}}"
   },
   "landing": {
     "nav": {

@@ -681,4 +681,18 @@ describe("transferencia", () => {
 
     expect(destino).toHaveValue("conta-2");
   });
+
+  it("valor acima do disponivel ainda CONCLUI a etapa do valor", async () => {
+    // Par do teste que garante que o botao nao e desabilitado. O disponivel
+    // do cliente e estimativa; quem decide e o servidor. Um indicador que
+    // marcasse esta etapa como pendente diria ao usuario que falta algo
+    // quando nao falta.
+    montar();
+    const usuario = userEvent.setup();
+    await escolherOrigem(usuario);
+    await escolherDestino(usuario, contato.id);
+    await usuario.type(screen.getByLabelText("Valor"), "999999.00");
+
+    expect(screen.getByTestId("etapa-valor")).toHaveAttribute("data-concluida", "true");
+  });
 });
