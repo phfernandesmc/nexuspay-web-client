@@ -96,20 +96,30 @@
     --marca-1: oklch(0.68 0.21 295);
     --marca-2: oklch(0.72 0.21 340);
     --marca-3: oklch(0.78 0.16 45);
-    --marca-suave: oklch(0.25 0.04 300);
-    --background: oklch(0.145 0 0);
+    --marca-suave: oklch(0.28 0.04 300);
+
+    /* Perolado, nao preto. O escuro anterior era oklch(0.145) com croma ZERO
+       — quase preto e cinza morto. Aqui a luminosidade sobe e entra um sopro
+       de croma no matiz da marca (295), que e o que da o aspecto de perola
+       em vez de tinta encardida.
+
+       Medido antes de trocar: texto sobre o fundo cai de 18,96:1 para
+       16,99:1 e o secundario de 7,63:1 para 7,13:1 — ambos muito acima dos
+       4,5:1 do AA. Levantar fundo em tema escuro sempre custa contraste, e
+       aqui havia folga de sobra para gastar. */
+    --background: oklch(0.21 0.008 295);
     --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
+    --card: oklch(0.26 0.01 295);
     --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
+    --popover: oklch(0.26 0.01 295);
     --popover-foreground: oklch(0.985 0 0);
     --primary: oklch(0.922 0 0);
     --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
+    --secondary: oklch(0.31 0.012 295);
     --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
+    --muted: oklch(0.31 0.012 295);
+    --muted-foreground: oklch(0.72 0.01 295);
+    --accent: oklch(0.31 0.012 295);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
     --border: oklch(1 0 0 / 10%);
@@ -120,11 +130,11 @@
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
+    --sidebar: oklch(0.26 0.01 295);
     --sidebar-foreground: oklch(0.985 0 0);
     --sidebar-primary: oklch(0.488 0.243 264.376);
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent: oklch(0.31 0.012 295);
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
@@ -158,5 +168,27 @@
     button:not(:disabled),
     [role="button"]:not([aria-disabled="true"]) {
         cursor: pointer;
+    }
+}
+
+@layer base {
+    /*
+     * O gradiente do fundo escuro.
+     *
+     * Duas paradas muito proximas — a de cima um pouco mais clara — para o
+     * fundo nao parecer uma chapa unica. E fixed: rolando a pagina, um
+     * gradiente que acompanha o scroll faz o topo "clarear" de novo a cada
+     * bloco, o que denuncia o truque.
+     *
+     * So no escuro: no claro o fundo ja e branco, e um gradiente ali vira
+     * sujeira.
+     */
+    .dark body {
+        background-image: linear-gradient(
+            180deg,
+            oklch(0.245 0.012 295) 0%,
+            oklch(0.21 0.008 295) 60%
+        );
+        background-attachment: fixed;
     }
 }
