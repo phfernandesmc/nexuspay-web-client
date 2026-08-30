@@ -140,7 +140,14 @@ export default function TransferPage() {
       )}
 
       {achada === null ? (
-        <div className="flex flex-col gap-2">
+        /* Dois caminhos visualmente distintos, como o mockup pede. A
+           separacao semantica ja existia nos dois optgroup do select e tem
+           teste proprio; o que faltava era ela aparecer. O select foi
+           mantido de proposito: e ele que carrega as regras cruzadas entre
+           origem e destino, e troca-lo por uma lista de cartoes reescreveria
+           quatro provas sem ganho para o usuario. */
+        <div className="grid gap-4 md:grid-cols-2">
+        <div className="flex flex-col gap-2 rounded-xl border p-4">
           <Label htmlFor="transferencia-destino">{t("transaction:destination")}</Label>
           <select
             id="transferencia-destino"
@@ -179,10 +186,18 @@ export default function TransferPage() {
               </AlertDescription>
             </Alert>
           )}
-          <Button variant="outline" onClick={() => setBuscando(true)}>
-            {t("transaction:newAccount")}
-          </Button>
-          {buscando && <AccountLookup onEncontrada={setAchada} />}
+        </div>
+
+        <div className="flex flex-col gap-2 rounded-xl border p-4">
+          <p className="text-sm font-medium">{t("transaction:manualEntry")}</p>
+          {buscando ? (
+            <AccountLookup onEncontrada={setAchada} />
+          ) : (
+            <Button variant="outline" onClick={() => setBuscando(true)}>
+              {t("transaction:newAccount")}
+            </Button>
+          )}
+        </div>
         </div>
       ) : (
         <div className="flex flex-col gap-2">

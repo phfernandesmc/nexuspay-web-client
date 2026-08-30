@@ -176,7 +176,8 @@
     "stepAccount": "Conta",
     "stepDestination": "Destino",
     "stepAmount": "Valor",
-    "stepsProgress": "Etapa {{feitas}} de {{total}}"
+    "stepsProgress": "Etapa {{feitas}} de {{total}}",
+    "manualEntry": "Inserir manualmente"
   },
   "landing": {
     "nav": {

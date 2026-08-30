@@ -176,7 +176,8 @@
     "stepAccount": "Account",
     "stepDestination": "Recipient",
     "stepAmount": "Amount",
-    "stepsProgress": "Step {{feitas}} of {{total}}"
+    "stepsProgress": "Step {{feitas}} of {{total}}",
+    "manualEntry": "Enter manually"
   },
   "landing": {
     "nav": {
