@@ -134,4 +134,29 @@ describe("abrir conta", () => {
 
     expect(fechou).toBe(true);
   });
+
+  it("escolher Poupanca cria a conta como SAVINGS", async () => {
+    // A escolha do tipo nao tinha teste nenhum: dava para trocar o widget e
+    // mandar sempre CHECKING sem nada acusar. E o que vai no payload, nao o
+    // que aparece na tela, que decide o tipo da conta criada.
+    let corpo: unknown = null;
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/institutions`, () => HttpResponse.json([instituicao])),
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([])),
+      mswHttp.post(`${URL_TESTE}/accounts`, async ({ request }) => {
+        corpo = await request.json();
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    envolverComQuery(<OpenAccountDialog aberto onFechar={() => {}} />);
+
+    await screen.findByTestId(`instituicao-${instituicao.id}`);
+    await userEvent.click(screen.getByTestId(`instituicao-${instituicao.id}`));
+    await userEvent.click(screen.getByRole("radio", { name: "Poupança" }));
+    await userEvent.click(screen.getByRole("button", { name: "Abrir" }));
+
+    await waitFor(() =>
+      expect(corpo).toMatchObject({ institution_id: instituicao.id, type: "SAVINGS" }),
+    );
+  });
 });

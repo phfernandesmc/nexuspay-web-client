@@ -60,17 +60,44 @@ export default function OpenAccountDialog({
         />
       </div>
 
+      {/* Dois botoes, e nao um <select> de duas opcoes. Alem de esconder
+          metade da escolha atras de um clique, o select NATIVO nao herda os
+          tokens de cor: no tema escuro ele renderizava com o padrao do
+          navegador — fundo branco, texto escuro — destoando de tudo em
+          volta. Este era o ultimo <select> do app.
+
+          radiogroup pelo mesmo motivo dos outros: escolha unica, com estado
+          anunciado e navegacao por teclado. */}
       <div className="mt-4 flex flex-col gap-2">
-        <Label htmlFor="tipo">{t("account:type")}</Label>
-        <select
-          id="tipo"
-          className="rounded border px-2 py-1"
-          value={tipo}
-          onChange={(e) => setTipo(e.target.value as TipoConta)}
-        >
-          <option value="CHECKING">{t("account:checking")}</option>
-          <option value="SAVINGS">{t("account:savings")}</option>
-        </select>
+        <span id="rotulo-tipo-conta" className="text-sm font-medium">
+          {t("account:type")}
+        </span>
+        <div role="radiogroup" aria-labelledby="rotulo-tipo-conta" className="flex gap-2 p-1">
+          {(["CHECKING", "SAVINGS"] as const).map((valor) => {
+            const marcado = tipo === valor;
+            return (
+              <div
+                key={valor}
+                role="radio"
+                aria-checked={marcado}
+                aria-label={t(valor === "CHECKING" ? "account:checking" : "account:savings")}
+                tabIndex={marcado ? 0 : -1}
+                onClick={() => setTipo(valor)}
+                onKeyDown={(evento) => {
+                  if (evento.key === " " || evento.key === "Enter") {
+                    evento.preventDefault();
+                    setTipo(valor);
+                  }
+                }}
+                className={`flex-1 cursor-pointer rounded-full border px-4 py-2 text-center text-sm hover:bg-muted ${
+                  marcado ? "bg-muted font-medium ring-2 ring-[var(--marca-2)]" : ""
+                }`}
+              >
+                {t(valor === "CHECKING" ? "account:checking" : "account:savings")}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="mt-4 flex flex-col gap-2">
