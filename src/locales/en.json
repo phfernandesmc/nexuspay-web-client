@@ -99,7 +99,8 @@
     "closeConfirm": "Close this account? It will leave your list.",
     "save": "Save",
     "closeConfirmButton": "Close",
-    "available": "Available"
+    "available": "Available",
+    "totalBalance": "Total balance"
   },
   "statement": {
     "title": "Statement",

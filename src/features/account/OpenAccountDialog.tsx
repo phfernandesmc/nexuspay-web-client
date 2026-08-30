@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Modal from "@/components/layout/Modal";
+import InstitutionLogo from "@/features/institution/InstitutionLogo";
 import { useAbrirConta, useInstituicoes } from "@/features/account/queries";
 import type { TipoConta } from "@/features/account/types";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
@@ -25,6 +27,8 @@ export default function OpenAccountDialog({
 
   if (!aberto) return null;
 
+  const escolhida = instituicoes?.find((i) => i.id === instituicaoId);
+
   async function aoConfirmar() {
     setErro(null);
     try {
@@ -40,10 +44,8 @@ export default function OpenAccountDialog({
   }
 
   return (
-    <div role="dialog" aria-label={t("account:openTitle")} className="rounded border p-4">
-      <h2 className="text-lg font-semibold">{t("account:openTitle")}</h2>
-
-      <div className="mt-4 flex flex-col gap-2">
+    <Modal titulo={t("account:openTitle")} aoFechar={onFechar}>
+      <div className="flex flex-col gap-2">
         <Label htmlFor="instituicao">{t("account:institution")}</Label>
         <select
           id="instituicao"
@@ -84,14 +86,28 @@ export default function OpenAccountDialog({
         </Alert>
       )}
 
-      <div className="mt-4 flex gap-2">
-        <Button onClick={() => void aoConfirmar()} disabled={abrir.isPending || instituicaoId === ""}>
+      {/* Previa da instituicao escolhida: o mesmo logo que aparecera no
+          cartao, para a escolha no <select> ter consequencia visivel antes
+          de confirmar. */}
+      {escolhida !== undefined && (
+        <div className="mt-4 flex items-center gap-3 rounded-lg border p-3">
+          <InstitutionLogo instituicao={escolhida} />
+          <span className="text-sm font-medium">{escolhida.name}</span>
+        </div>
+      )}
+
+      <div className="mt-6 flex gap-2">
+        <Button
+          onClick={() => void aoConfirmar()}
+          disabled={abrir.isPending || instituicaoId === ""}
+          className="flex-1 rounded-full bg-gradient-to-r from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] text-white"
+        >
           {t("account:confirm")}
         </Button>
-        <Button variant="outline" onClick={onFechar}>
+        <Button variant="outline" className="rounded-full" onClick={onFechar}>
           {t("account:cancel")}
         </Button>
       </div>
-    </div>
+    </Modal>
   );
 }

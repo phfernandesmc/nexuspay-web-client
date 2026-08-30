@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { http as mswHttp, HttpResponse } from "msw";
 import { servidor, URL_TESTE } from "@/test/msw";
@@ -57,11 +58,14 @@ describe("lista de contas", () => {
 
   it("usa a cor da instituicao no cartao", async () => {
     // O color_hex existe na API para a interface diferenciar instituicoes.
+    // Agora ele preenche o cartao inteiro, e nao mais uma borda lateral.
+    // #112233 e escuro o bastante para passar no AA com texto branco, entao
+    // corLegivel o devolve intacto — ver lib/cor.test.ts.
     servidor.use(mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta])));
     montar();
 
     const cartao = await screen.findByTestId(`conta-${conta.id}`);
-    expect(cartao).toHaveStyle({ borderLeftColor: "#112233" });
+    expect(cartao.querySelector("[style]")).toHaveStyle({ backgroundColor: "#112233" });
   });
 
   it("conta sem apelido nao mostra vazio", async () => {
@@ -145,5 +149,31 @@ describe("lista de contas", () => {
     // ambiguidade antes mesmo de chegar na asserção que importa aqui.
     await screen.findByTestId(`conta-${conta.id}`);
     expect(screen.queryByText(/Dispon[ií]vel/)).not.toBeInTheDocument();
+  });
+
+  it("o convite para abrir conta aparece mesmo sem nenhuma conta", async () => {
+    // Ele e o proprio estado vazio: quem chega sem contas precisa de um
+    // caminho visivel para a primeira, nao so de uma frase.
+    servidor.use(mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([])));
+    montar();
+
+    expect(await screen.findByRole("button", { name: "Abrir conta" })).toBeInTheDocument();
+  });
+
+  it("clicar no convite abre o dialogo", async () => {
+    // A ligacao entre o convite e o dialogo nao tinha teste nenhum: o
+    // dialogo era exercitado montado a mao, entao trocar o gatilho por um
+    // card poderia deixar de abrir sem nada acusar.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/accounts`, () => HttpResponse.json([conta])),
+      mswHttp.get(`${URL_TESTE}/institutions`, () => HttpResponse.json([instituicao])),
+    );
+    montar();
+
+    await userEvent.click(await screen.findByRole("button", { name: "Abrir conta" }));
+
+    // O titulo do dialogo ("Abrir uma conta") e diferente do rotulo do
+    // gatilho ("Abrir conta"): sao chaves distintas no catalogo.
+    expect(await screen.findByRole("dialog", { name: "Abrir uma conta" })).toBeInTheDocument();
   });
 });

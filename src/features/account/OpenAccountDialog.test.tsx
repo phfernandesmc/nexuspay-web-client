@@ -119,4 +119,16 @@ describe("abrir conta", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Instituição não encontrada.");
   });
+
+  it("Escape fecha o dialogo", async () => {
+    // Virou modal de verdade: sobreposicao cobrindo a pagina. Um modal que
+    // nao fecha por Escape prende quem navega so por teclado, porque o
+    // botao Cancelar pode estar fora da ordem de foco alcancavel.
+    let fechou = false;
+    envolverComQuery(<OpenAccountDialog aberto onFechar={() => { fechou = true; }} />);
+
+    await userEvent.keyboard("{Escape}");
+
+    expect(fechou).toBe(true);
+  });
 });

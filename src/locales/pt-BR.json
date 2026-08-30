@@ -99,7 +99,8 @@
     "closeConfirm": "Encerrar esta conta? Ela sai da sua lista.",
     "save": "Salvar",
     "closeConfirmButton": "Encerrar",
-    "available": "Disponível"
+    "available": "Disponível",
+    "totalBalance": "Saldo total"
   },
   "statement": {
     "title": "Extrato",

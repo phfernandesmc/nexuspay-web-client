@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import AccountCard from "@/features/account/AccountCard";
 import OpenAccountDialog from "@/features/account/OpenAccountDialog";
 import { useContas } from "@/features/account/queries";
@@ -30,19 +30,32 @@ export default function AccountsPage() {
 
   return (
     <section>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("account:title")}</h1>
-        <Button onClick={() => setAbrindo(true)}>{t("account:open")}</Button>
-      </div>
-      {contas.length === 0 ? (
+      <h1 className="text-2xl font-semibold">{t("account:title")}</h1>
+
+      {contas.length === 0 && (
         <p className="mt-4 text-muted-foreground">{t("account:empty")}</p>
-      ) : (
-        <div className="mt-4 flex flex-col gap-3">
-          {contas.map((conta) => (
-            <AccountCard key={conta.id} conta={conta} />
-          ))}
-        </div>
       )}
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {contas.map((conta) => (
+          <AccountCard key={conta.id} conta={conta} />
+        ))}
+
+        {/* O convite e um <button> com rotulo visivel, e nao um card so com
+            o icone de mais: um "+" sozinho nao anuncia nada a leitor de tela
+            e obrigaria um aria-label que ninguem ve para conferir. Ele e
+            tambem o estado vazio — quem chega sem contas precisa de um
+            caminho, nao so de uma frase. */}
+        <button
+          type="button"
+          onClick={() => setAbrindo(true)}
+          className="flex min-h-48 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed text-muted-foreground transition hover:border-[var(--marca-2)] hover:text-[var(--marca-2)]"
+        >
+          <Plus className="size-8" />
+          <span className="font-medium">{t("account:open")}</span>
+        </button>
+      </div>
+
       {/* Montagem condicional, nao so `aberto`: sem isso o dialogo fica
           sempre montado e o estado (instituicao, apelido, erro) sobrevive ao
           cancelamento — reabrir mostraria dados de uma tentativa anterior.
