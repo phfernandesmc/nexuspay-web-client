@@ -26,3 +26,22 @@ void i18n
   });
 
 export default i18n;
+
+/**
+ * Mantem <html lang> em sincronia com o idioma escolhido.
+ *
+ * Nao e detalhe cosmetico: leitor de tela usa esse atributo para escolher a
+ * FONETICA. Com o valor errado, "Transferencia" e "Saldo disponivel" sao
+ * lidos com pronuncia inglesa — e o index.html vinha com lang="en" enquanto
+ * o fallback do app e pt-BR.
+ *
+ * Aplicado tambem agora, na carga, e nao so no evento: o idioma inicial vem
+ * do localStorage ou do navegador e ja pode ser diferente do que esta no
+ * HTML antes de qualquer troca.
+ */
+function sincronizarLang(idioma: string): void {
+  document.documentElement.lang = idioma;
+}
+
+i18n.on("languageChanged", sincronizarLang);
+sincronizarLang(i18n.resolvedLanguage ?? "pt-BR");

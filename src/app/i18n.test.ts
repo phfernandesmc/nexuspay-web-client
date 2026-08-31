@@ -26,4 +26,16 @@ describe("i18n", () => {
     // sintoma que este teste existe para tornar visivel.
     expect(i18n.t("auth:login.email")).not.toContain("auth:");
   });
+
+  it("mantem o lang do documento em sincronia com o idioma", async () => {
+    // Leitor de tela usa <html lang> para escolher a FONETICA. Com o valor
+    // errado, "Transferencia" e "Saldo disponivel" sao lidos com pronuncia
+    // inglesa — e o index.html vinha com lang="en" enquanto o fallback do
+    // app e pt-BR.
+    await i18n.changeLanguage("en");
+    expect(document.documentElement.lang).toBe("en");
+
+    await i18n.changeLanguage("pt-BR");
+    expect(document.documentElement.lang).toBe("pt-BR");
+  });
 });
