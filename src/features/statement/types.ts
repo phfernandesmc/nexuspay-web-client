@@ -14,6 +14,15 @@ export type Contraparte = {
 
 export type ItemExtrato = {
   id: string;
+  /**
+   * A conta a que ESTA linha pertence.
+   *
+   * No extrato consolidado, uma transferencia entre contas proprias vem
+   * como DUAS linhas com o mesmo id — o debito numa conta e o credito na
+   * outra. E este campo que as distingue, e por isso a chave da lista
+   * precisa ser id + account_id.
+   */
+  account_id: string;
   type: TipoTransacao;
   direction: Direcao;
   /** Decimal do Pydantic: string ou numero. */

@@ -23,6 +23,7 @@ const transferencia = {
   direction: "OUT" as const,
   amount: "100.00",
   status: "PENDING" as const,
+  account_id: "conta-1",
   is_between_own_accounts: false,
   counterparty: {
     holder_name: "M**** S****",
@@ -39,6 +40,7 @@ const deposito = {
   direction: "IN" as const,
   amount: "250.00",
   status: "COMPLETED" as const,
+  account_id: "conta-1",
   is_between_own_accounts: false,
   counterparty: null,
   created_at: "2026-03-08T10:00:00Z",
@@ -50,6 +52,7 @@ const transferenciaEntreContasProprias = {
   direction: "OUT" as const,
   amount: "50.00",
   status: "COMPLETED" as const,
+  account_id: "conta-1",
   is_between_own_accounts: true,
   counterparty: {
     holder_name: "A**** C****",

@@ -15,6 +15,7 @@ function item(direcao: "IN" | "OUT"): ItemExtrato {
     direction: direcao,
     amount: "10.00",
     status: "COMPLETED",
+    account_id: "conta-1",
     is_between_own_accounts: false,
     counterparty: null,
     created_at: "2026-08-20T10:00:00Z",

@@ -174,9 +174,18 @@ export default function StatementReportPage() {
         <p className="text-muted-foreground">{t("statement:empty")}</p>
       )}
 
+      {/* A chave e id + account_id, e a conta e exibida em cada linha.
+          Uma transferencia entre contas proprias vem como DUAS linhas com o
+          MESMO id — o debito numa conta e o credito na outra. Sem a conta na
+          linha, as duas parecem a mesma transacao duplicada com sinais
+          opostos, o que confunde mais do que a linha unica que havia antes. */}
       <ul>
         {itens.map((item) => (
-          <StatementRow key={item.id} item={item} />
+          <StatementRow
+            key={`${item.id}-${item.account_id}`}
+            item={item}
+            conta={(contas ?? []).find((c) => c.id === item.account_id)}
+          />
         ))}
       </ul>
 

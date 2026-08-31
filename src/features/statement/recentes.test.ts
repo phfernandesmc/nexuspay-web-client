@@ -30,6 +30,7 @@ function item(id: string, quando: string): ItemExtrato {
     direction: "OUT",
     amount: "10.00",
     status: "COMPLETED",
+    account_id: "conta-1",
     is_between_own_accounts: false,
     counterparty: null,
     created_at: quando,

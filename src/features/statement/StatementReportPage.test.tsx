@@ -30,6 +30,7 @@ const item = {
   direction: "OUT" as const,
   amount: "10.00",
   status: "COMPLETED" as const,
+  account_id: "conta-1",
   is_between_own_accounts: false,
   counterparty: null,
   created_at: "2026-05-10T10:00:00Z",
