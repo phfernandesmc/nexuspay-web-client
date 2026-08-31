@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { http as mswHttp, HttpResponse } from "msw";
@@ -119,5 +119,46 @@ describe("extrato por periodo", () => {
 
     await screen.findByTestId("total-entradas");
     expect(consulta!.get("account_id")).toBe(conta.id);
+  });
+
+  it("baixar o PDF passa pelo cliente HTTP, com os filtros da tela", async () => {
+    // NAO pode ser um <a href> nativo: o token de acesso vive so em
+    // memoria, nao em cookie, entao o navegador nao mandaria o
+    // Authorization e o gateway responderia 401. O download passa pelo
+    // cliente HTTP e vira um blob.
+    let consulta: URLSearchParams | null = null;
+    const criados: string[] = [];
+    // So os DOIS metodos que faltam no jsdom. Substituir o URL global
+    // inteiro quebraria `new URL(...)` para o axios e para o MSW — foi o
+    // que aconteceu na primeira tentativa, e o sintoma foi a tela nem
+    // carregar.
+    (URL as unknown as { createObjectURL: () => string }).createObjectURL = () => {
+      criados.push("blob:fake");
+      return "blob:fake";
+    };
+    (URL as unknown as { revokeObjectURL: () => void }).revokeObjectURL = () => {};
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/statement`, () =>
+        HttpResponse.json({
+          items: [],
+          next_cursor: null,
+          totals: { total_in: "0.00", total_out: "0.00" },
+        }),
+      ),
+      mswHttp.get(`${URL_TESTE}/transactions/statement.pdf`, ({ request }) => {
+        consulta = new URL(request.url).searchParams;
+        return HttpResponse.arrayBuffer(new ArrayBuffer(8), {
+          headers: { "Content-Type": "application/pdf" },
+        });
+      }),
+    );
+    montar();
+    const usuario = userEvent.setup();
+
+    await screen.findByTestId("total-entradas");
+    await usuario.click(screen.getByRole("button", { name: "Baixar PDF" }));
+
+    await waitFor(() => expect(criados).toHaveLength(1));
+    expect(consulta!.get("date_from")).toMatch(/^\d{4}-\d{2}-01$/);
   });
 });

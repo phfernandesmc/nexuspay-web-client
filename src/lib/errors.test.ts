@@ -49,8 +49,13 @@ describe("catalogo de erro", () => {
     expect(CODIGOS_DE_ERRO).toContain("INTERNAL_ERROR");
   });
 
-  it("tem 29 codigos", () => {
-    expect(CODIGOS_DE_ERRO).toHaveLength(29);
+  it("tem 30 codigos", () => {
+    // A contagem exata e o ponto: ela obriga quem acrescenta um codigo a
+    // reconhecer que fez isso, em vez de o catalogo crescer sem que
+    // ninguem confira se a traducao entrou nos dois idiomas.
+    //
+    // 29 -> 30 com PERIOD_TOO_LARGE, do endpoint de extrato em PDF.
+    expect(CODIGOS_DE_ERRO).toHaveLength(30);
   });
 });
 

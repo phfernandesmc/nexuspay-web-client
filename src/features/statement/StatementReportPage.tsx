@@ -8,6 +8,8 @@ import { useContas } from "@/features/account/queries";
 import InstitutionLogo from "@/features/institution/InstitutionLogo";
 import StatementRow from "@/features/statement/StatementRow";
 import { periodoDoMes, periodoDosUltimosDias, type Periodo } from "@/features/statement/periodo";
+import { Download } from "lucide-react";
+import { baixarExtratoDoPeriodo } from "@/features/statement/api";
 import { useExtratoDoPeriodo } from "@/features/statement/queries";
 import { codigoTraduzivel, extrairErro } from "@/lib/errors";
 import { formatarDinheiro, paraCentavos } from "@/lib/money";
@@ -23,6 +25,8 @@ export default function StatementReportPage() {
   const [periodo, setPeriodo] = useState<Periodo>(() => periodoDoMes(new Date()));
   // undefined = todas as contas. Escolher uma e refinamento, nao pre-requisito.
   const [contaId, setContaId] = useState<string | undefined>(undefined);
+  const [baixando, setBaixando] = useState(false);
+  const [erroPdf, setErroPdf] = useState<string | null>(null);
 
   const consulta = useExtratoDoPeriodo({ ...periodo, account_id: contaId });
   const paginas = consulta.data?.pages ?? [];
@@ -106,6 +110,34 @@ export default function StatementReportPage() {
           ))}
         </div>
       </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          className="gap-2 rounded-full bg-gradient-to-r from-[var(--marca-1)] via-[var(--marca-2)] to-[var(--marca-3)] px-6 text-white"
+          disabled={baixando}
+          onClick={() => {
+            setErroPdf(null);
+            setBaixando(true);
+            void baixarExtratoDoPeriodo({ ...periodo, account_id: contaId })
+              .catch((falha: unknown) => {
+                // PERIOD_TOO_LARGE cai aqui: o gateway recusa periodos que
+                // nao cabem num PDF em vez de truncar, e a pessoa precisa
+                // saber que deve encurtar o intervalo.
+                setErroPdf(t(codigoTraduzivel(extrairErro(falha).code), { ns: "errors" }));
+              })
+              .finally(() => setBaixando(false));
+          }}
+        >
+          <Download aria-hidden="true" className="size-4" />
+          {t("statement:downloadPdf")}
+        </Button>
+      </div>
+
+      {erroPdf !== null && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>{erroPdf}</AlertDescription>
+        </Alert>
+      )}
 
       {consulta.isError && (
         <Alert variant="destructive" role="alert">

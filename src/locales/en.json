@@ -79,7 +79,8 @@
     "IDEMPOTENCY_KEY_REUSED": "This key was already used with different data.",
     "NOT_FOUND": "We couldn't find what you were looking for.",
     "METHOD_NOT_ALLOWED": "Operation not allowed.",
-    "INTERNAL_ERROR": "Something went wrong on our side. Please try again."
+    "INTERNAL_ERROR": "Something went wrong on our side. Please try again.",
+    "PERIOD_TOO_LARGE": "This period has too many transactions for a PDF. Choose a shorter range."
   },
   "account": {
     "title": "Your accounts",
@@ -128,7 +129,8 @@
     "totalOut": "Money out",
     "period": "Period",
     "from": "From",
-    "to": "To"
+    "to": "To",
+    "downloadPdf": "Download PDF"
   },
   "contact": {
     "title": "Contacts",
