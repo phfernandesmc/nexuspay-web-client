@@ -42,6 +42,15 @@ export type TotaisDoPeriodo = {
   /** Decimal do Pydantic: string ou numero. */
   total_in: string | number;
   total_out: string | number;
+  /**
+   * Transferencias entre contas do proprio usuario.
+   *
+   * Fora de total_in e total_out porque a pessoa nao ganhou nem perdeu
+   * dinheiro — mas com cifra propria, porque aparecem na lista como duas
+   * linhas e precisam ser explicadas. Sempre zero no extrato de uma conta
+   * so.
+   */
+  total_internal: string | number;
 };
 
 export type PaginaDoPeriodo = {

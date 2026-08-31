@@ -148,7 +148,11 @@ export default function StatementReportPage() {
       )}
 
       {totais !== undefined && (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div
+          className={`grid gap-3 ${
+            contaId === undefined ? "sm:grid-cols-3" : "sm:grid-cols-2"
+          }`}
+        >
           <div className="rounded-2xl border p-4">
             <p className="text-sm text-muted-foreground">{t("statement:totalIn")}</p>
             <p
@@ -167,6 +171,23 @@ export default function StatementReportPage() {
               {formatarDinheiro(paraCentavos(totais.total_out), locale)}
             </p>
           </div>
+
+          {/* So no consolidado: com uma conta so, nenhuma transacao tem as
+              duas pontas no conjunto e esta cifra e sempre zero — um zero
+              permanente ensina a ignorar o numero.
+
+              Em cor neutra de proposito: nao e ganho nem perda, e pinta-la
+              de verde ou vermelho diria o contrario do que ela significa. */}
+          {contaId === undefined && (
+            <div className="rounded-2xl border p-4">
+              <p className="text-sm text-muted-foreground">
+                {t("statement:totalInternal")}
+              </p>
+              <p data-testid="total-internas" className="text-2xl font-bold">
+                {formatarDinheiro(paraCentavos(totais.total_internal), locale)}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

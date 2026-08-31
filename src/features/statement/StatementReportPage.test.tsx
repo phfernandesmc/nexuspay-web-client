@@ -66,7 +66,7 @@ describe("extrato por periodo", () => {
         HttpResponse.json({
           items: [item],
           next_cursor: "proxima",
-          totals: { total_in: "1000.00", total_out: "600.00" },
+          totals: { total_in: "1000.00", total_out: "600.00", total_internal: "0.00" },
         }),
       ),
     );
@@ -87,7 +87,7 @@ describe("extrato por periodo", () => {
         return HttpResponse.json({
           items: [],
           next_cursor: null,
-          totals: { total_in: "0.00", total_out: "0.00" },
+          totals: { total_in: "0.00", total_out: "0.00", total_internal: "0.00" },
         });
       }),
     );
@@ -109,7 +109,7 @@ describe("extrato por periodo", () => {
         return HttpResponse.json({
           items: [],
           next_cursor: null,
-          totals: { total_in: "0.00", total_out: "0.00" },
+          totals: { total_in: "0.00", total_out: "0.00", total_internal: "0.00" },
         });
       }),
     );
@@ -143,7 +143,7 @@ describe("extrato por periodo", () => {
         HttpResponse.json({
           items: [],
           next_cursor: null,
-          totals: { total_in: "0.00", total_out: "0.00" },
+          totals: { total_in: "0.00", total_out: "0.00", total_internal: "0.00" },
         }),
       ),
       mswHttp.get(`${URL_TESTE}/transactions/statement.pdf`, ({ request }) => {
@@ -161,5 +161,28 @@ describe("extrato por periodo", () => {
 
     await waitFor(() => expect(criados).toHaveLength(1));
     expect(consulta!.get("date_from")).toMatch(/^\d{4}-\d{2}-01$/);
+  });
+
+  it("a cifra de movimentacao interna so aparece no consolidado", async () => {
+    // Com uma conta so, nenhuma transacao tem as duas pontas no conjunto e
+    // o numero e sempre zero. Um zero permanente ensina a pessoa a ignorar a
+    // cifra — inclusive quando ela passar a significar algo.
+    servidor.use(
+      mswHttp.get(`${URL_TESTE}/transactions/statement`, () =>
+        HttpResponse.json({
+          items: [],
+          next_cursor: null,
+          totals: { total_in: "0.00", total_out: "0.00", total_internal: "250.00" },
+        }),
+      ),
+    );
+    montar();
+    const usuario = userEvent.setup();
+
+    expect(await screen.findByTestId("total-internas")).toHaveTextContent("250,00");
+
+    await usuario.click(await screen.findByTestId(`conta-filtro-${conta.id}`));
+
+    await waitFor(() => expect(screen.queryByTestId("total-internas")).toBeNull());
   });
 });

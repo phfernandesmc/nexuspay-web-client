@@ -130,7 +130,8 @@
     "period": "Período",
     "from": "De",
     "to": "Até",
-    "downloadPdf": "Baixar PDF"
+    "downloadPdf": "Baixar PDF",
+    "totalInternal": "Entre suas contas"
   },
   "contact": {
     "title": "Contatos",

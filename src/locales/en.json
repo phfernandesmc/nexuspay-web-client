@@ -130,7 +130,8 @@
     "period": "Period",
     "from": "From",
     "to": "To",
-    "downloadPdf": "Download PDF"
+    "downloadPdf": "Download PDF",
+    "totalInternal": "Between your accounts"
   },
   "contact": {
     "title": "Contacts",
