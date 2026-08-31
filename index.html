@@ -3,6 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Caminho para dentro de src/, e nao para public/: assim o Vite
+         processa o arquivo no build, acrescenta hash ao nome e o navegador
+         para de servir um icone velho do cache quando ele mudar. Em public/
+         o arquivo seria copiado cru, sem hash. -->
+    <link rel="icon" type="image/png" href="/src/assets/logo/logo.png" />
+    <link rel="apple-touch-icon" href="/src/assets/logo/logo.png" />
+
     <title>NexusPay</title>
   </head>
   <body>
